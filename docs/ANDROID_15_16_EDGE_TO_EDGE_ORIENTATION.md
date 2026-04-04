@@ -10,9 +10,9 @@ Google Play poate afișa avertismente legate de:
 
 ### Orientare (MainActivity)
 
-- În **`app.json`**: `"orientation": "portrait"` a fost schimbat în **`"orientation": "default"`**.
-- Efect: aplicația nu mai impune doar portrait; pe Android 16, pe dispozitive mari (tablete, foldable), sistemul poate ignora restricțiile de orientare – acum nu mai există o restricție de eliminat.
-- **Recomandare:** Testează layout-ul în landscape și pe ecran mare; dacă vrei să limitezi la portrait doar pe telefoane, poți trata din cod (ex. dimensiuni ecran) fără a seta `screenOrientation` în manifest.
+- În **`app.json`**: **`"orientation": "default"`** (nu portrait fix).
+- În **`AndroidManifest.xml`**: pe `MainActivity` **nu** mai există `android:screenOrientation` — Play Console nu mai raportează blocare `PORTRAIT` pentru versiunea **0.3.0**+.
+- **Recomandare:** Testează layout în landscape și pe tabletă / foldable; UX-ul în portrait rămâne principal pe telefoane, dar aplicația poate fi redimensionată conform politicii Android 16.
 
 ### Edge-to-edge (Android 15)
 
@@ -26,7 +26,7 @@ Google Play poate afișa avertismente legate de:
 - **Ce poți face:**
   - Păstrează **Expo** și **react-native-screens** la ultimele versiuni compatibile (ex. `npx expo install --fix`).
   - La fiecare upgrade major Expo (ex. 55, 56), verifică changelog-ul pentru „Android 15”, „edge-to-edge”, „WindowInsetsController”.
-- Google afișează avertismentul, dar aplicația continuă să funcționeze; pe Android 16 unele API-uri vor fi pur și simplu ignorate de sistem.
+- Google afișează avertismentul, dar aplicația continuă să funcționeze; pe Android 16 unele API-uri vor fi pur și simplu ignorate de sistem. **Nu există încă un patch aplicabil doar în proiectul KHEIA** fără upgrade de Expo / React Native / `react-native-screens`; după fiecare `expo upgrade`, rulează `npx expo install --fix` și reverifică în Play pre-launch report.
 
 ---
 
@@ -34,7 +34,7 @@ Google Play poate afișa avertismente legate de:
 
 | Problemă | Măsură în proiect |
 |----------|--------------------|
-| `android:screenOrientation="PORTRAIT"` pe MainActivity | `app.json` → `orientation: "default"` (nu mai forțăm portrait în manifest). |
+| `android:screenOrientation="PORTRAIT"` / restricții pe ecran mare | `orientation: "default"` în `app.json`; fără atribut `screenOrientation` pe `MainActivity` în manifest. |
 | Edge-to-edge / API-uri depreciate | `app.json` → `android.edgeToEdgeEnabled: true`; actualizări viitoare Expo/RN vor reduce avertismentele. |
 
 ---

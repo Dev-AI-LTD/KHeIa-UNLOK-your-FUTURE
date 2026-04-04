@@ -87,12 +87,17 @@ Dacă proiectul Railway este **conectat la GitHub** (Deploy from GitHub repo):
 
 ## Pas 3: Configurează Supabase
 
-### 3.1 Setează NODE_BACKEND_URL
+### 3.1 Setează Edge Function secrets
 
-1. Supabase Dashboard → **Project Settings** → **Edge Functions**
-2. Adaugă variabila de mediu:
-   - **Name**: `NODE_BACKEND_URL`
-   - **Value**: `https://kheia-node-backend-xxxx.up.railway.app` (URL-ul de la Railway)
+În **Supabase Dashboard** → **Project Settings** → **Edge Functions** → **Secrets**, adaugă:
+
+| Secret | Value | Notă |
+|--------|--------|------|
+| `NODE_BACKEND_URL` | `https://kheia-unlok-your-future-production.up.railway.app` | URL-ul backend-ului (Railway). Folosit de `generate-chapter-content`, `generate-chapter-summary`, `generate-test`. |
+| `SUPABASE_SERVICE_ROLE_KEY` | (din Project Settings → API) | De obicei există deja; verifică. Folosit de `webhook-revenuecat`, `delete-account`, `_shared/supabase-client`. |
+| `REVENUECAT_WEBHOOK_AUTH` | (opțional) un secret ales de tine | Dacă îl setezi, webhook-ul RevenueCat verifică header-ul `Authorization` (sau `Bearer <secret>`). Configurează același secret în RevenueCat la webhook URL. |
+
+**Pași:** Add new secret → Name + Value → Save. După ce adaugi sau modifici secrets, redeployează Edge Functions dacă e cazul.
 
 ### 3.2 Redeployează Edge Functions (dacă e nevoie)
 

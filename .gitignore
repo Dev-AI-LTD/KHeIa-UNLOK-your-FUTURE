@@ -3,11 +3,15 @@
 .env.local
 .env.*.local
 supabase/.env
+supabase/.temp/
 
 # Dependencies
 node_modules/
 .pnp
 .pnp.js
+
+# Android local signing (never commit)
+android/app/debug.keystore
 
 # Build
 dist/

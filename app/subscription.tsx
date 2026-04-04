@@ -13,40 +13,37 @@ import { colors, spacing, typography } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { SUBSCRIPTION_PRICES_RON } from '@/services/subscription.service';
 import { getQuizQuestionLimit } from '@/services/subscription.service';
-import { updateSubscriptionAfterPurchase } from '@/services/subscription.service';
 import {
   isRevenueCatConfigured,
   initPurchases,
-  purchasePackage,
-  PLAN_TO_PACKAGE_ID,
+  purchaseSubscriptionPlan,
+  getPaywallPriceSnapshot,
+  presentCustomerCenter,
 } from '@/services/purchases.service';
 import { supabase } from '@/services/supabase';
 
-type PlanId = 'monthly' | 'yearly';
+type PlanId = 'monthly' | 'yearly' | 'lifetime';
 
-const PLANS: Array<{
+function defaultPriceLabels(): Record<PlanId, string> {
+  return {
+    monthly: `${SUBSCRIPTION_PRICES_RON.monthly} RON/lună`,
+    yearly: `${SUBSCRIPTION_PRICES_RON.yearly} RON/an`,
+    lifetime: `${SUBSCRIPTION_PRICES_RON.full_edumat} RON — plată unică`,
+  };
+}
+
+const PLAN_LAYOUT: Array<{
   id: PlanId;
   title: string;
-  price: number;
-  priceLabel: string; // ex. "19 RON/lună"
-  billingNote: string; // ex. "Facturare lunară"
+  billingNote: string;
   highlight?: boolean;
 }> = [
+  { id: 'monthly', title: 'Lunar', billingNote: 'Facturare lunară' },
+  { id: 'yearly', title: 'Anual', billingNote: 'Facturare anuală', highlight: true },
   {
-    id: 'monthly',
-    title: 'Lunar',
-    price: SUBSCRIPTION_PRICES_RON.monthly,
-    priceLabel: `${SUBSCRIPTION_PRICES_RON.monthly} RON/lună`,
-    billingNote: 'Facturare lunară',
-    highlight: false,
-  },
-  {
-    id: 'yearly',
-    title: 'Anual',
-    price: SUBSCRIPTION_PRICES_RON.yearly,
-    priceLabel: `${SUBSCRIPTION_PRICES_RON.yearly} RON/an`,
-    billingNote: 'Facturare anuală',
-    highlight: true,
+    id: 'lifetime',
+    title: 'Pro pe viață',
+    billingNote: 'Plată unică — acces permanent',
   },
 ];
 
@@ -54,6 +51,7 @@ export default function SubscriptionScreen() {
   const router = useRouter();
   const { source, discount24h } = useLocalSearchParams<{ source?: string; discount24h?: string }>();
   const [purchasing, setPurchasing] = useState<PlanId | null>(null);
+  const [priceLabels, setPriceLabels] = useState<Record<PlanId, string>>(defaultPriceLabels);
 
   const showDiscount = discount24h === 'true';
 
@@ -62,6 +60,12 @@ export default function SubscriptionScreen() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       await initPurchases(user?.id ?? null);
+      const snap = await getPaywallPriceSnapshot();
+      setPriceLabels((prev) => ({
+        monthly: snap.monthly?.priceLabel ?? prev.monthly,
+        yearly: snap.yearly?.priceLabel ?? prev.yearly,
+        lifetime: snap.lifetime?.priceLabel ?? prev.lifetime,
+      }));
     })();
   }, []);
 
@@ -69,8 +73,8 @@ export default function SubscriptionScreen() {
     setPurchasing(planId);
     try {
       if (isRevenueCatConfigured()) {
-        const packageId = PLAN_TO_PACKAGE_ID[planId] ?? planId;
-        const result = await purchasePackage(packageId);
+        const result = await purchaseSubscriptionPlan(planId);
+
         if (!result.success) {
           const msg = result.error instanceof Error ? result.error.message : 'Plata a eșuat.';
           if (msg.toLowerCase().includes('cancelled') || msg.toLowerCase().includes('canceled')) {
@@ -81,42 +85,29 @@ export default function SubscriptionScreen() {
           setPurchasing(null);
           return;
         }
-        const expirationDate = result.customerInfo.expirationDate;
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.id && expirationDate) {
-          await updateSubscriptionAfterPurchase(user.id, planId, expirationDate);
-        }
+
+        // We no longer call updateSubscriptionAfterPurchase here.
+        // The RevenueCat Webhook will handle the server-side update.
         router.replace({
           pathname: '/subscription-success',
-          params: { plan: planId, ...(expirationDate && { expiration: expirationDate }) },
+          params: {
+            plan: planId === 'lifetime' ? 'full_edumat' : planId,
+            expiration: result.customerInfo.expirationDate ?? ''
+          },
         });
       } else {
+        // Mock behavior for development without RevenueCat
         await new Promise((r) => setTimeout(r, 1500));
         const { data: { user } } = await supabase.auth.getUser();
         if (!user?.id) {
-          Alert.alert(
-            'Cont necesar',
-            'Trebuie să fii autentificat pentru a salva abonamentul. Autentifică-te și încearcă din nou.',
-            [{ text: 'OK' }]
-          );
+          Alert.alert('Cont necesar', 'Autentifică-te pentru a continua.');
           setPurchasing(null);
           return;
         }
-        const now = new Date();
-        const expirationDate =
-          planId === 'yearly'
-            ? new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()).toISOString()
-            : (() => {
-                const y = now.getFullYear();
-                const m = now.getMonth() + 1;
-                const lastDayNext = new Date(y, m + 1, 0).getDate();
-                const day = Math.min(now.getDate(), lastDayNext);
-                return new Date(y, m, day).toISOString();
-              })();
-        await updateSubscriptionAfterPurchase(user.id, planId, expirationDate);
+
         router.replace({
           pathname: '/subscription-success',
-          params: { plan: planId, expiration: expirationDate },
+          params: { plan: planId === 'lifetime' ? 'full_edumat' : planId },
         });
       }
     } catch (err) {
@@ -124,6 +115,19 @@ export default function SubscriptionScreen() {
       Alert.alert('Eroare', 'A apărut o problemă. Încearcă din nou.');
     } finally {
       setPurchasing(null);
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    if (!isRevenueCatConfigured()) {
+      Alert.alert('Informație', 'Gestionează abonamentul din magazinul de aplicații.');
+      return;
+    }
+    try {
+      await presentCustomerCenter();
+    } catch (err) {
+      console.error('Restore purchases error:', err);
+      Alert.alert('Eroare', 'Nu s-a putut deschide centrul de abonamente.');
     }
   };
 
@@ -136,8 +140,6 @@ export default function SubscriptionScreen() {
       <Pressable
         onPress={() => router.back()}
         style={styles.back}
-        accessibilityRole="button"
-        accessibilityLabel="Înapoi"
       >
         <Text style={styles.backText}>← Înapoi</Text>
       </Pressable>
@@ -166,7 +168,7 @@ export default function SubscriptionScreen() {
       )}
 
       <View style={styles.plans}>
-        {PLANS.map((plan) => (
+        {PLAN_LAYOUT.map((plan) => (
           <Pressable
             key={plan.id}
             onPress={() => handlePurchase(plan.id)}
@@ -176,8 +178,6 @@ export default function SubscriptionScreen() {
               plan.highlight && styles.planCardHighlight,
               pressed && styles.planCardPressed,
             ]}
-            accessibilityRole="button"
-            accessibilityLabel={`Plan ${plan.title}, ${plan.priceLabel}, ${plan.billingNote}. Alege acest plan.`}
           >
             <GlassCard dark intensity={18} style={styles.planCardInner}>
               {plan.highlight && (
@@ -186,7 +186,7 @@ export default function SubscriptionScreen() {
                 </View>
               )}
               <Text style={styles.planTitle}>{plan.title}</Text>
-              <Text style={styles.planPrice}>{plan.priceLabel}</Text>
+              <Text style={styles.planPrice}>{priceLabels[plan.id]}</Text>
               <Text style={styles.planBillingNote}>{plan.billingNote}</Text>
               <View style={styles.planButton}>
                 {purchasing === plan.id ? (
@@ -201,8 +201,18 @@ export default function SubscriptionScreen() {
       </View>
 
       <Text style={styles.footer}>
-        Anulare oricând. Acces instant după plată.
+        Abonamentele lunar și anual se reînnoiesc automat până la anulare în magazin. Pro pe viață este o
+        plată unică. Accesul se activează după confirmarea plății.
       </Text>
+
+      <Pressable
+        onPress={handleRestorePurchases}
+        style={styles.restoreBtn}
+        accessibilityRole="button"
+        accessibilityLabel="Gestionează abonamentul"
+      >
+        <Text style={styles.restoreBtnText}>Gestionează abonamentul</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -266,5 +276,15 @@ const styles = StyleSheet.create({
     fontSize: typography.size.sm,
     color: colors.dark.muted,
     textAlign: 'center',
+  },
+  restoreBtn: {
+    marginTop: spacing.md,
+    alignItems: 'center',
+  },
+  restoreBtnText: {
+    fontSize: typography.size.sm,
+    color: colors.dark.secondary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

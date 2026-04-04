@@ -140,6 +140,39 @@ RevenueCat e un serviciu care gestionează abonamentele (in-app purchases) pentr
    Pentru „lifetime” poți folosi **One-time product** (Monetize → One-time products) dacă nu e abonament recurent.
 3. La fiecare abonament: setează prețul, perioada (1 lună / 1 an), trial gratuit (opțional).
 
+#### C.1 Opțional: creare produs one-time prin Android Publisher API
+
+Dacă preferi automatizarea (CLI, script), poți crea un **managed one-time** produs cu metoda [`inappproducts.insert`](https://developers.google.com/android-publisher/api-ref/rest/v3/inappproducts/insert). Ai nevoie de **Android Publisher API** activat în același proiect Google Cloud ca service account-ul, scope `https://www.googleapis.com/auth/androidpublisher`, și token (OAuth sau JWT pentru service account).
+
+Exemplu:
+
+```http
+POST https://androidpublisher.googleapis.com/androidpublisher/v3/applications/com.kheia.edumat/inappproducts
+Authorization: Bearer <ACCESS_TOKEN>
+Content-Type: application/json
+
+{
+  "packageName": "com.kheia.edumat",
+  "sku": "kheia_pro_lifetime",
+  "status": "active",
+  "purchaseType": "managedUser",
+  "defaultLanguage": "en-US",
+  "listings": {
+    "en-US": {
+      "title": "KHEIA Pro - Permanent",
+      "description": "Lifetime access to KHEIA Pro. One-time purchase."
+    }
+  },
+  "prices": {
+    "RO": { "currency": "RON", "priceMicros": "399000000" }
+  }
+}
+```
+
+`priceMicros` sunt în micro-unități ale monedei (ex. `399000000` ≈ 399,00 RON pentru regiunea `RO`).
+
+**Aliniere cu app și RevenueCat:** în `src/services/purchases.service.ts`, `PLAN_TO_PACKAGE_ID` mapează lifetime la identificatorul `lifetime`. Dacă păstrezi SKU-ul `kheia_pro_lifetime` în Play, setează același **Product ID** în RevenueCat și actualizează maparea în cod; altfel folosește `lifetime` ca `sku` în request și în Console.
+
 ### D. Service account (legătura RevenueCat ↔ Google Play)
 
 1. **Google Play Console → Setup → API access.**  

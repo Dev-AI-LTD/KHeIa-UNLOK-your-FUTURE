@@ -181,7 +181,7 @@ export async function grantReferralPremium(userId: string): Promise<{ success: b
 }
 
 /**
- * Price display in RON (placeholder – configure in RevenueCat dashboard).
+ * Fallback prices (RON) când încă nu s-au încărcat prețurile din magazin pe ecranul de abonament.
  */
 export const SUBSCRIPTION_PRICES_RON = {
   monthly: 29,

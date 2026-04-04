@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import type { PurchasesPackage } from 'react-native-purchases';
 
 const APPLE_KEY = (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE) ?? '';
 const GOOGLE_KEY = (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE) ?? '';
@@ -81,7 +82,13 @@ export async function getOfferings(): Promise<{
   }
 }
 
-/** Package identifiers in RevenueCat: monthly, yearly, lifetime. */
+/**
+ * Google Play product id for lifetime (see Play Console / API).
+ * RevenueCat package may still be named `lifetime`; we also match this store id.
+ */
+export const LIFETIME_STORE_PRODUCT_ID = 'kheia_pro_lifetime';
+
+/** Preferred RevenueCat package identifiers in the current offering (fallback: match store product id). */
 export const PLAN_TO_PACKAGE_ID: Record<string, string> = {
   monthly: 'monthly',
   yearly: 'yearly',
@@ -89,9 +96,92 @@ export const PLAN_TO_PACKAGE_ID: Record<string, string> = {
   full_edumat: 'lifetime',
 };
 
+export function resolvePackageForPlan(
+  packages: PurchasesPackage[],
+  planId: 'monthly' | 'yearly' | 'lifetime'
+): PurchasesPackage | undefined {
+  const preferredRcId = PLAN_TO_PACKAGE_ID[planId] ?? planId;
+  const byRc = packages.find((p) => p.identifier === preferredRcId);
+  if (byRc) return byRc;
+
+  if (planId === 'lifetime') {
+    return packages.find(
+      (p) =>
+        p.identifier === LIFETIME_STORE_PRODUCT_ID ||
+        p.product.identifier === LIFETIME_STORE_PRODUCT_ID ||
+        /lifetime|edumat/i.test(p.product.identifier) ||
+        /lifetime|edumat/i.test(p.identifier)
+    );
+  }
+
+  return undefined;
+}
+
+/** Localized price strings from the store (offering `current`). */
+export type PaywallPriceSnapshot = Partial<
+  Record<'monthly' | 'yearly' | 'lifetime', { priceLabel: string }>
+>;
+
+export async function getPaywallPriceSnapshot(): Promise<PaywallPriceSnapshot> {
+  if (!isNative) return {};
+  const apiKey = getApiKey();
+  if (!apiKey || !initialized) return {};
+  try {
+    const Purchases = (await import('react-native-purchases')).default;
+    const offerings = await Purchases.getOfferings();
+    const current = offerings.current;
+    if (!current) return {};
+
+    const out: PaywallPriceSnapshot = {};
+    for (const planId of ['monthly', 'yearly', 'lifetime'] as const) {
+      const pkg = resolvePackageForPlan(current.availablePackages, planId);
+      const label = pkg?.product?.priceString?.trim();
+      if (label) out[planId] = { priceLabel: label };
+    }
+    return out;
+  } catch (e) {
+    console.warn('[Purchases] getPaywallPriceSnapshot failed', e);
+    return {};
+  }
+}
+
 export type PurchaseResult =
   | { success: true; customerInfo: { expirationDate: string | null } }
   | { success: false; error: unknown };
+
+export async function purchaseSubscriptionPlan(
+  planId: 'monthly' | 'yearly' | 'lifetime'
+): Promise<PurchaseResult> {
+  if (!isNative) return { success: false, error: new Error('Purchases only on native') };
+  const apiKey = getApiKey();
+  if (!apiKey || !initialized) {
+    return { success: false, error: new Error('RevenueCat not configured or not initialized') };
+  }
+  try {
+    const Purchases = (await import('react-native-purchases')).default;
+    const offerings = await Purchases.getOfferings();
+    const current = offerings.current;
+    if (!current) return { success: false, error: new Error('No offering available') };
+    const pkg = resolvePackageForPlan(current.availablePackages, planId);
+    if (!pkg) {
+      return {
+        success: false,
+        error: new Error(
+          `Plan „${planId}” nu e în offering. Verifică RevenueCat (pachete monthly/yearly și produsul ${LIFETIME_STORE_PRODUCT_ID}).`
+        ),
+      };
+    }
+    const { customerInfo } = await Purchases.purchasePackage(pkg);
+    const active = (customerInfo as CustomerInfo)?.entitlements?.active;
+    const expirationDate =
+      active?.[KHEIA_PRO_ENTITLEMENT_ID]?.expirationDate ??
+      (active && Object.values(active)[0]?.expirationDate) ??
+      null;
+    return { success: true, customerInfo: { expirationDate } };
+  } catch (e: unknown) {
+    return { success: false, error: e };
+  }
+}
 
 export async function purchasePackage(packageIdentifier: string): Promise<PurchaseResult> {
   if (!isNative) return { success: false, error: new Error('Purchases only on native') };
@@ -104,9 +194,12 @@ export async function purchasePackage(packageIdentifier: string): Promise<Purcha
     const offerings = await Purchases.getOfferings();
     const current = offerings.current;
     if (!current) return { success: false, error: new Error('No offering available') };
-    const pkg = current.availablePackages.find(
+    let pkg: PurchasesPackage | undefined = current.availablePackages.find(
       (p: { identifier: string }) => p.identifier === packageIdentifier
     );
+    if (!pkg && (packageIdentifier === LIFETIME_STORE_PRODUCT_ID || packageIdentifier === 'lifetime')) {
+      pkg = resolvePackageForPlan(current.availablePackages, 'lifetime');
+    }
     if (!pkg) {
       return {
         success: false,

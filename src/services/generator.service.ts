@@ -36,7 +36,7 @@ export const createChapter = async (topic: string, subjectId: string, level: 'gi
     body: { topic, subject_id: subjectId, level },
   });
 
-  if (error && BACKEND_URL) {
+  if (error && getNodeBackendUrl()) {
     const fallback = await fetchBackend<{ source?: string; content?: string }>('/api/generate/chapter', {
       topic,
       subject_id: subjectId,
@@ -55,7 +55,7 @@ export const createChapter = async (topic: string, subjectId: string, level: 'gi
 export const generateTheory = async (chapterId: string, topic?: string) => {
   const body = { chapter_id: chapterId, ...(topic && { topic }), summaryOnly: true };
 
-  if (BACKEND_URL) {
+  if (getNodeBackendUrl()) {
     const direct = await fetchBackend<{ source?: string; content?: string }>('/api/generate/summary', body);
     if (direct.data) return { data: direct.data, error: null };
   }
@@ -64,7 +64,7 @@ export const generateTheory = async (chapterId: string, topic?: string) => {
     body: { chapter_id: chapterId, ...(topic && { topic }) },
   });
 
-  if (error && BACKEND_URL) {
+  if (error && getNodeBackendUrl()) {
     const fallback = await fetchBackend<{ source?: string; content?: string }>('/api/generate/summary', body);
     if (fallback.data) return { data: fallback.data, error: null };
   }

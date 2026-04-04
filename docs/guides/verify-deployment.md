@@ -11,11 +11,15 @@
 
 ### 2. Supabase (Edge Functions)
 
-- [ ] `NODE_BACKEND_URL` = URL Railway (ex: `https://xxx.up.railway.app`)
+- [ ] **Secrets** (Project Settings → Edge Functions → Secrets):
+  - `NODE_BACKEND_URL` = URL Railway (ex: `https://kheia-unlok-your-future-production.up.railway.app`)
+  - `SUPABASE_SERVICE_ROLE_KEY` = (verifică că există)
+  - (Opțional) `REVENUECAT_WEBHOOK_AUTH` = secret pentru verificarea webhook-ului RevenueCat
 - [ ] Edge Functions deployate:
   - `generate-chapter-content`
   - `generate-chapter-summary`
   - `generate-test` (dacă folosești teste)
+  - `webhook-revenuecat` (pentru abonamente)
 
 ### 3. App (.env / supabase/.env)
 
