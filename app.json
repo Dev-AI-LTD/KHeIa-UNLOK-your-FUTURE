@@ -13,6 +13,7 @@
     "userInterfaceStyle": "automatic",
     "plugins": [
       "./node_modules/expo-router/app.plugin.js",
+      "expo-secure-store",
       ["expo-build-properties", { "android": { "enableProguardInReleaseBuilds": true } }]
     ],
     "jsEngine": "hermes",
@@ -27,6 +28,7 @@
       "versionCode": 3,
       "package": "com.kheia.edumat",
       "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/kheya_icon_1024x1024.png",
         "backgroundColor": "#1e293b"

@@ -1,13 +1,38 @@
+import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
+import { KindeAuthProvider } from '@kinde/expo';
 import { AppBackground } from '@/components/common/AppBackground';
 import { CatalogProvider } from '@/components/common/CatalogProvider';
 import { StreakUpdater } from '@/components/common/StreakUpdater';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { SkinProvider } from '@/contexts/SkinContext';
+import { bridgeKindeToSupabase } from '@/services/auth.service';
+
+const kindeDomain = process.env.EXPO_PUBLIC_KINDE_DOMAIN ?? '';
+const kindeClientId = process.env.EXPO_PUBLIC_KINDE_CLIENT_ID ?? '';
 
 export default function RootLayout() {
   return (
     <ErrorBoundary>
+    <KindeAuthProvider
+      config={{
+        domain: kindeDomain,
+        clientId: kindeClientId,
+        scopes: 'openid profile email offline',
+      }}
+      callbacks={{
+        onSuccess: async (_user, _state, context) => {
+          try {
+            const accessToken = await context.getAccessToken();
+            if (accessToken) {
+              await bridgeKindeToSupabase(accessToken);
+            }
+          } catch (e) {
+            console.error('[Kinde] bridge after OAuth failed:', e);
+          }
+        },
+      }}
+    >
     <SkinProvider>
     <AppBackground>
       <StreakUpdater />
@@ -19,6 +44,9 @@ export default function RootLayout() {
           contentStyle: {
             backgroundColor: 'transparent',
           },
+          ...(Platform.OS === 'android' && {
+            animation: 'none',
+          }),
         }}
       >
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -59,12 +87,11 @@ export default function RootLayout() {
         <Stack.Screen name="test/result/[testId]" />
         <Stack.Screen name="rewards" options={{ headerShown: false, headerTitle: '' }} />
         <Stack.Screen name="referral" options={{ headerShown: false, headerTitle: '' }} />
-        <Stack.Screen name="subscription" options={{ headerShown: false, headerTitle: '' }} />
-        <Stack.Screen name="subscription-success" options={{ headerShown: false, headerTitle: '' }} />
       </Stack>
       </CatalogProvider>
     </AppBackground>
     </SkinProvider>
+    </KindeAuthProvider>
     </ErrorBoundary>
   );
 }

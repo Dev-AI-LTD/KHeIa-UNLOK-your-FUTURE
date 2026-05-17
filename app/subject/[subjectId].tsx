@@ -6,23 +6,12 @@ import { colors, spacing, typography } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getGeneratedChapters } from '@/lib/chapterStorage';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
-import { useSubscription } from '@/hooks/useSubscription';
-import { canAccessChapter } from '@/services/subscription.service';
-
 export default function SubjectDetailScreen() {
   const { subjectId } = useLocalSearchParams<{ subjectId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { subjects, chapters: chaptersData, loading } = useCatalogContext();
-  const { status } = useSubscription();
   const [generatedChapters, setGeneratedChapters] = useState<typeof chaptersData>([]);
-
-  const accessStatus = status ?? {
-    isPremium: false,
-    planType: 'free' as const,
-    currentPeriodEnd: null,
-    referralPremiumUntil: null,
-  };
 
   useFocusEffect(
     useCallback(() => {
@@ -95,46 +84,26 @@ export default function SubjectDetailScreen() {
         </View>
       ) : (
       <View style={styles.chapterList}>
-        {allChapters.map((chapter, index) => {
-          const canAccess = subjectId
-            ? canAccessChapter(subjectId, chapter.order, accessStatus)
-            : false;
-          return (
+        {allChapters.map((chapter, index) => (
             <Pressable
               key={chapter.id}
-              onPress={() =>
-                canAccess
-                  ? router.push(`/chapter/${chapter.id}/theory`)
-                  : router.push({ pathname: '/subscription', params: { source: 'chapter_lock' } })
-              }
+              onPress={() => router.push(`/chapter/${chapter.id}/theory`)}
               style={({ pressed }) => [
                 styles.chapterPressable,
                 pressed && styles.chapterPressed,
-                !canAccess && styles.chapterLocked,
               ]}
               accessibilityRole="button"
-              accessibilityLabel={
-                canAccess
-                  ? `Capitol ${index + 1}: ${chapter.title}`
-                  : `Capitol ${index + 1}: ${chapter.title}. Blocat, necesită Premium.`
-              }
+              accessibilityLabel={`Capitol ${index + 1}: ${chapter.title}`}
             >
               <GlassCard dark intensity={14} style={styles.chapterCard}>
                 <View style={styles.chapterNumberBadge}>
                   <Text style={styles.chapterNumber}>{index + 1}</Text>
                 </View>
                 <Text style={styles.chapterTitle}>{chapter.title}</Text>
-                {canAccess ? (
-                  <Text style={styles.chapterArrow}>→</Text>
-                ) : (
-                  <View style={styles.lockedBadge}>
-                    <Text style={styles.lockedBadgeText}>🔒 Premium</Text>
-                  </View>
-                )}
+                <Text style={styles.chapterArrow}>→</Text>
               </GlassCard>
             </Pressable>
-          );
-        })}
+        ))}
       </View>
       )}
     </ScrollView>

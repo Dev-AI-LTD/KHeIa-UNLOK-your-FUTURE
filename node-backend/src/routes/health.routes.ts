@@ -5,6 +5,7 @@ export const registerHealthRoutes = (app: Express) => {
     res.json({
       status: 'ok',
       openaiConfigured: !!process.env.OPENAI_API_KEY,
+      ttsRoute: true,
     });
   });
 };

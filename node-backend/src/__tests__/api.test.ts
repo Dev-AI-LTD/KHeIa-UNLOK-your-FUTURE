@@ -17,6 +17,15 @@ jest.mock('../services/chat.service', () => ({
   chatENBAC: jest.fn().mockResolvedValue({ content: 'Mocked chat reply' }),
 }));
 
+jest.mock('../services/tts.service', () => ({
+  speakText: jest.fn().mockResolvedValue({
+    ok: true,
+    buffer: Buffer.from('mock-mp3'),
+    contentType: 'audio/mpeg',
+  }),
+  cleanTextForTts: jest.fn((t: string) => t.trim()),
+}));
+
 import { app } from '../app';
 
 describe('Node-backend API', () => {
@@ -94,6 +103,22 @@ describe('Node-backend API', () => {
         .send({ exam_type: 'EN', level: 'gimnaziu' });
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('content');
+    });
+  });
+
+  describe('POST /api/tts/speak', () => {
+    it('returns audio/mpeg when text is provided', async () => {
+      const res = await request(app)
+        .post('/api/tts/speak')
+        .send({ text: 'Fotosinteza este procesul prin care plantele produc oxigen.' });
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/audio\/mpeg/);
+    });
+
+    it('returns 400 when text is missing', async () => {
+      const res = await request(app).post('/api/tts/speak').send({});
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error');
     });
   });
 

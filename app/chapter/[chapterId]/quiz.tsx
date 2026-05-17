@@ -20,7 +20,6 @@ import {
   type QuizOption,
 } from '@/services/quiz.service';
 import { getGeneratedChapters } from '@/lib/chapterStorage';
-import { getSubscriptionStatus, canAccessChapter } from '@/services/subscription.service';
 
 const QUESTION_COUNT = 10;
 
@@ -58,15 +57,6 @@ export default function ChapterQuizScreen() {
       const ch =
         chapters.find((c) => c.id === chapterId) ??
         generated.find((c) => c.id === chapterId);
-
-      if (ch) {
-        const status = await getSubscriptionStatus(user?.id ?? null);
-        if (!canAccessChapter(ch.subject_id, ch.order, status)) {
-          router.replace({ pathname: '/subscription', params: { source: 'quiz_lock' } });
-          setLoading(false);
-          return;
-        }
-      }
 
       const q = await fetchQuizWithOptions(chapterId, user?.id ?? null, QUESTION_COUNT);
       setQuestions(q);

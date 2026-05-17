@@ -1,5 +1,14 @@
 import { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  TextInput,
+  Alert,
+  Dimensions,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography } from '@/theme';
@@ -8,8 +17,10 @@ import { getGeneratedChapters, addGeneratedChapter, setGeneratedTheory } from '@
 import { useCatalogContext } from '@/components/common/CatalogProvider';
 import { createChapter } from '@/services/generator.service';
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 const TUTORIAL_TEXT =
-  'Poți căuta și genera orice capitol din programa școlară de pregătire pentru Bacalaureat sau Evaluare Națională. Scrie tema sau alege una din sugestiile de mai jos.';
+  'Caută în programă un capitol existent sau scrie tema unui capitol nou. Poți genera orice capitol pentru Bacalaureat sau Evaluare Națională.';
 
 export default function GenerateChapterScreen() {
   const { subjectId } = useLocalSearchParams<{ subjectId: string }>();
@@ -21,7 +32,7 @@ export default function GenerateChapterScreen() {
 
   const subject = subjects.find((s) => s.id === subjectId);
 
-  const suggestions = useMemo(
+  const allSuggestions = useMemo(
     () =>
       chapters
         .filter((c) => c.subject_id === subjectId)
@@ -29,6 +40,12 @@ export default function GenerateChapterScreen() {
         .map((c) => c.title),
     [chapters, subjectId]
   );
+
+  const filteredSuggestions = useMemo(() => {
+    const q = topic.trim().toLowerCase();
+    if (!q) return allSuggestions;
+    return allSuggestions.filter((title) => title.toLowerCase().includes(q));
+  }, [allSuggestions, topic]);
 
   const onGenerate = async () => {
     if (!topic.trim() || !subjectId) return;
@@ -88,6 +105,7 @@ export default function GenerateChapterScreen() {
       style={styles.container}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={16}>
         <Text style={styles.backText}>← Înapoi</Text>
@@ -103,41 +121,52 @@ export default function GenerateChapterScreen() {
         <Text style={styles.tutorialText}>{TUTORIAL_TEXT}</Text>
       </GlassCard>
 
-      <Text style={styles.label}>Topic / Tema capitolului</Text>
-      <GlassCard dark intensity={14} style={styles.inputCard}>
+      <Text style={styles.label}>Caută capitole</Text>
+      <GlassCard dark intensity={14} style={styles.searchCard}>
         <TextInput
-          style={styles.input}
+          style={styles.searchInput}
           placeholder={
-            suggestions.length > 0
-              ? `Ex: ${suggestions[0]}${suggestions[1] ? `, ${suggestions[1]}...` : ''}`
-              : 'Scrie tema capitolului...'
+            allSuggestions.length > 0
+              ? `Ex: ${allSuggestions[0]}${allSuggestions[1] ? `, ${allSuggestions[1]}...` : ''}`
+              : 'Caută în programă sau scrie tema unui capitol nou...'
           }
           placeholderTextColor="rgba(255,255,255,0.5)"
           value={topic}
           onChangeText={setTopic}
+          multiline
+          textAlignVertical="top"
+          maxLength={500}
         />
       </GlassCard>
 
-      {suggestions.length > 0 && (
+      {allSuggestions.length > 0 && (
         <View style={styles.suggestionsSection}>
-          <Text style={styles.suggestionsLabel}>Sugestii din programa {subject.name}</Text>
-          <View style={styles.suggestionsGrid}>
-            {suggestions.map((title) => (
-              <Pressable
-                key={title}
-                onPress={() => setTopic(title)}
-                style={({ pressed }) => [
-                  styles.suggestionChip,
-                  pressed && styles.suggestionChipPressed,
-                  topic === title && styles.suggestionChipActive,
-                ]}
-              >
-                <Text style={styles.suggestionChipText} numberOfLines={1}>
-                  {title}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+          <Text style={styles.suggestionsLabel}>
+            {topic.trim()
+              ? filteredSuggestions.length > 0
+                ? `Rezultate din ${subject.name} (${filteredSuggestions.length})`
+                : 'Niciun capitol găsit — poți genera unul nou cu tema de mai sus'
+              : `Sugestii din programa ${subject.name}`}
+          </Text>
+          {filteredSuggestions.length > 0 ? (
+            <View style={styles.suggestionsGrid}>
+              {filteredSuggestions.map((title) => (
+                <Pressable
+                  key={title}
+                  onPress={() => setTopic(title)}
+                  style={({ pressed }) => [
+                    styles.suggestionChip,
+                    pressed && styles.suggestionChipPressed,
+                    topic === title && styles.suggestionChipActive,
+                  ]}
+                >
+                  <Text style={styles.suggestionChipText} numberOfLines={2}>
+                    {title}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
         </View>
       )}
 
@@ -176,15 +205,29 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.95)',
     lineHeight: 20,
   },
-  label: { fontSize: typography.size.sm, fontWeight: '600', color: 'rgba(255,255,255,0.9)', marginBottom: spacing.sm },
-  inputCard: {
-    padding: spacing.md,
-    backgroundColor: 'rgba(2, 6, 23, 0.7)',
-    borderColor: 'rgba(148, 163, 184, 0.25)',
-    marginBottom: spacing.lg,
+  label: {
+    fontSize: typography.size.md,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.95)',
+    marginBottom: spacing.sm,
   },
-  input: { fontSize: typography.size.md, color: '#ffffff', padding: 0 },
-  suggestionsSection: { marginTop: spacing.md, marginBottom: spacing.lg },
+  searchCard: {
+    padding: spacing.lg,
+    backgroundColor: 'rgba(2, 6, 23, 0.5)',
+    borderColor: 'rgba(148, 163, 184, 0.25)',
+    borderRadius: 20,
+    marginBottom: spacing.lg,
+    minHeight: SCREEN_HEIGHT * 0.42,
+  },
+  searchInput: {
+    flex: 1,
+    minHeight: SCREEN_HEIGHT * 0.34,
+    fontSize: typography.size.lg,
+    color: '#ffffff',
+    padding: 0,
+    lineHeight: 26,
+  },
+  suggestionsSection: { marginBottom: spacing.lg },
   suggestionsLabel: {
     fontSize: typography.size.sm,
     fontWeight: '600',
@@ -199,7 +242,7 @@ const styles = StyleSheet.create({
   suggestionChip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: 999,
+    borderRadius: 12,
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
     borderWidth: 1,
     borderColor: 'rgba(148, 163, 184, 0.3)',

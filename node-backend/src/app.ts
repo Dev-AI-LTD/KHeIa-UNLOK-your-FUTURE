@@ -14,6 +14,7 @@ import pinoHttp from 'pino-http';
 
 import { registerGenerateRoutes } from './routes/generate.routes';
 import { registerHealthRoutes } from './routes/health.routes';
+import { registerTtsRoutes } from './routes/tts.routes';
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.get('/', (_req, res) => {
 
 registerHealthRoutes(app);
 registerGenerateRoutes(app);
+registerTtsRoutes(app);
 
 /** Exported for integration tests (supertest). */
 export { app };

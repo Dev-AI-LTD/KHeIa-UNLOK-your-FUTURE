@@ -21,5 +21,9 @@ module.exports = ({ config }) => ({
     ...config.extra,
     EXPO_PUBLIC_NODE_BACKEND_URL:
       process.env.EXPO_PUBLIC_NODE_BACKEND_URL?.trim() || DEFAULT_NODE_BACKEND_URL,
+    EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() ?? '',
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? '',
+    EXPO_PUBLIC_KINDE_DOMAIN: process.env.EXPO_PUBLIC_KINDE_DOMAIN?.trim() ?? '',
+    EXPO_PUBLIC_KINDE_CLIENT_ID: process.env.EXPO_PUBLIC_KINDE_CLIENT_ID?.trim() ?? '',
   },
 });

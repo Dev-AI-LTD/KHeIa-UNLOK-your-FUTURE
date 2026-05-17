@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { StyleProp, StyleSheet, ViewStyle } from 'react-native';
+import { Platform, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { getGlassBlur, getGlassSurface, glassStyles } from '@/theme';
 
@@ -11,12 +11,19 @@ type GlassCardProps = {
 };
 
 export const GlassCard = ({ children, style, intensity, dark = false }: GlassCardProps) => {
+  const cardStyle = [glassStyles.card, styles.clip, getGlassSurface(dark, 'card'), style];
+
+  // BlurView is expensive during stack transitions on Android; use frosted surface only.
+  if (Platform.OS === 'android') {
+    return <View style={cardStyle}>{children}</View>;
+  }
+
   const resolvedIntensity = intensity ?? getGlassBlur('card');
   return (
     <BlurView
       intensity={resolvedIntensity}
       tint={dark ? 'dark' : 'light'}
-      style={[glassStyles.card, styles.clip, getGlassSurface(dark, 'card'), style]}
+      style={cardStyle}
     >
       {children}
     </BlurView>

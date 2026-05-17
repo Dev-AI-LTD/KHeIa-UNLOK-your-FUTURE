@@ -1,13 +1,14 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getGeneratedChapters, getGeneratedTheory } from '@/lib/chapterStorage';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
-import { supabase } from '@/services/supabase';
-import { getSubscriptionStatus, canAccessChapter } from '@/services/subscription.service';
+import { buildTheorySections } from '@/services/chapterAudio.utils';
+import { useChapterAudio } from '@/hooks/useChapterAudio';
+import { isTtsAvailable } from '@/services/tts.client';
 
 const chapterTheoryData = require('../../../assets/offline-data/chaptertheory.json') as Array<{
   chapter_id: string;
@@ -21,9 +22,8 @@ export default function ChapterTheoryScreen() {
   const { chapters: chaptersData, chapterDetails: chapterDetailsData, loading } = useCatalogContext();
   const [generatedChapters, setGeneratedChapters] = useState<typeof chaptersData>([]);
   const [generatedTheory, setGeneratedTheoryState] = useState<string[] | null>(null);
-  const [accessChecked, setAccessChecked] = useState(false);
-  const [canAccess, setCanAccess] = useState(true);
-
+  const { progress, isActive, isPaused, error, startListening, togglePause, stop } =
+    useChapterAudio();
   useFocusEffect(
     useCallback(() => {
       getGeneratedChapters().then(setGeneratedChapters);
@@ -35,22 +35,6 @@ export default function ChapterTheoryScreen() {
     chaptersData.find((c) => c.id === chapterId) ??
     generatedChapters.find((c) => c.id === chapterId);
 
-  useEffect(() => {
-    if (!chapter || !chapterId) {
-      setAccessChecked(true);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const status = await getSubscriptionStatus(user?.id ?? null);
-      if (cancelled) return;
-      setCanAccess(canAccessChapter(chapter.subject_id, chapter.order, status));
-      setAccessChecked(true);
-    })();
-    return () => { cancelled = true; };
-  }, [chapter, chapterId]);
-
   const details = chapterDetailsData.find((d) => d.chapter_id === chapterId);
   const theoryEntry = chapterTheoryData.find((t) => t.chapter_id === chapterId);
   const sectionContents =
@@ -58,6 +42,20 @@ export default function ChapterTheoryScreen() {
   const sections = details?.sections ?? [];
   const keypoints = details?.keypoints ?? [];
   const hasFullChapter = sectionContents.length > 0;
+  const listenableSections = buildTheorySections(sectionContents, sections);
+  const canListen = listenableSections.length > 0;
+
+  const handleListen = async () => {
+    if (!chapterId || !canListen) return;
+    if (!isTtsAvailable()) {
+      Alert.alert(
+        'Indisponibil',
+        'Configurează Supabase sau EXPO_PUBLIC_NODE_BACKEND_URL pentru ascultare.',
+      );
+      return;
+    }
+    await startListening(chapterId, listenableSections);
+  };
 
   if (loading) {
     return (
@@ -78,35 +76,19 @@ export default function ChapterTheoryScreen() {
     );
   }
 
-  if (accessChecked && !canAccess) {
-    return (
-      <View style={[styles.container, styles.centered, { paddingTop: insets.top + spacing.lg }]}>
-        <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={16}>
-          <Text style={styles.backText}>← Înapoi</Text>
-        </Pressable>
-        <GlassCard dark intensity={14} style={styles.paywallCard}>
-          <Text style={styles.paywallEmoji}>🔒</Text>
-          <Text style={styles.paywallTitle}>Acest capitol necesită KHEYA Premium</Text>
-          <Text style={styles.paywallMessage}>
-            Deblochează toate capitolele și teste cu un abonament Premium.
-          </Text>
-          <Pressable
-            onPress={() => router.push({ pathname: '/subscription', params: { source: 'chapter_lock' } })}
-            style={({ pressed }) => [styles.paywallButton, pressed && styles.paywallButtonPressed]}
-            accessibilityRole="button"
-            accessibilityLabel="Mergi la abonament"
-          >
-            <Text style={styles.paywallButtonText}>Abonează-te</Text>
-          </Pressable>
-        </GlassCard>
-      </View>
-    );
-  }
+  const playerBarBottom = insets.bottom + spacing.contentBottom;
 
   return (
+    <View style={styles.screenWrap}>
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+      contentContainerStyle={[
+        styles.content,
+        {
+          paddingTop: insets.top + spacing.lg,
+          paddingBottom: isActive ? playerBarBottom + 88 : spacing.contentBottom,
+        },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <Pressable
@@ -134,6 +116,26 @@ export default function ChapterTheoryScreen() {
           <Text style={styles.generateTheoryBtnText}>+ Generează teorie</Text>
         </GlassCard>
       </Pressable>
+
+      {canListen ? (
+        <Pressable
+          onPress={isActive ? togglePause : handleListen}
+          disabled={progress?.loading}
+          style={({ pressed }) => [styles.listenBtn, pressed && styles.generateTheoryBtnPressed]}
+        >
+          <GlassCard dark intensity={14} style={styles.listenBtnInner}>
+            {progress?.loading ? (
+              <ActivityIndicator size="small" color="#a78bfa" />
+            ) : (
+              <Text style={styles.listenBtnText}>
+                {isActive ? (isPaused ? '▶ Continuă ascultarea' : '⏸ Pauză') : '🔊 Ascultă teoria'}
+              </Text>
+            )}
+          </GlassCard>
+        </Pressable>
+      ) : null}
+
+      {error ? <Text style={styles.audioError}>{error}</Text> : null}
 
       {hasFullChapter ? (
         sections.length > 0 ? (
@@ -188,10 +190,35 @@ export default function ChapterTheoryScreen() {
         </GlassCard>
       </Pressable>
     </ScrollView>
+
+    {isActive ? (
+      <View style={[styles.playerBar, { bottom: playerBarBottom }]}>
+        <GlassCard dark intensity={18} style={styles.playerBarInner}>
+          <Text style={styles.playerBarLabel}>
+            {progress?.loading
+              ? `Se pregătește secțiunea ${(progress.sectionIndex ?? 0) + 1}…`
+              : `Secțiunea ${(progress?.sectionIndex ?? 0) + 1} din ${progress?.totalSections ?? '—'}`}
+          </Text>
+          <View style={styles.playerControls}>
+            <Pressable onPress={togglePause} style={styles.playerControlBtn}>
+              <Text style={styles.playerControlText}>{isPaused ? '▶' : '⏸'}</Text>
+            </Pressable>
+            <Pressable onPress={() => void stop()} style={styles.playerControlBtn}>
+              <Text style={styles.playerControlText}>■</Text>
+            </Pressable>
+          </View>
+        </GlassCard>
+      </View>
+    ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screenWrap: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   container: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -231,6 +258,62 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   generateTheoryBtnText: { fontSize: typography.size.md, fontWeight: '600', color: '#60a5fa' },
+  listenBtn: { marginBottom: spacing.md },
+  listenBtnInner: {
+    padding: spacing.md,
+    backgroundColor: 'rgba(139, 92, 246, 0.28)',
+    borderColor: 'rgba(167, 139, 250, 0.55)',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  listenBtnText: { fontSize: typography.size.md, fontWeight: '700', color: '#c4b5fd' },
+  audioError: {
+    color: '#f87171',
+    fontSize: typography.size.sm,
+    marginBottom: spacing.md,
+  },
+  playerBar: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+  },
+  playerBarInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    backgroundColor: 'rgba(2, 6, 23, 0.85)',
+    borderColor: 'rgba(167, 139, 250, 0.4)',
+    borderWidth: 1,
+    borderRadius: 14,
+  },
+  playerBarLabel: {
+    flex: 1,
+    fontSize: typography.size.sm,
+    color: '#e9d5ff',
+    fontWeight: '600',
+    marginRight: spacing.sm,
+  },
+  playerControls: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  playerControlBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(139, 92, 246, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(167, 139, 250, 0.5)',
+  },
+  playerControlText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: '700',
+  },
   chapterTitle: {
     fontSize: typography.size.xl,
     fontWeight: '700',

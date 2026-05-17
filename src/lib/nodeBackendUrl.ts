@@ -22,3 +22,8 @@ export function getChatApiUrl(): string | null {
   const base = getNodeBackendUrl();
   return base ? `${base}/api/generate/chat` : null;
 }
+
+export function getTtsApiUrl(): string | null {
+  const base = getNodeBackendUrl();
+  return base ? `${base}/api/tts/speak` : null;
+}

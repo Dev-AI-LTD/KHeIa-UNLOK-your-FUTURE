@@ -32,8 +32,9 @@ const initialState: UseGamificationState = {
 export function useGamification() {
   const [state, setState] = useState<UseGamificationState>(initialState);
 
-  const refresh = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true }));
+  const refresh = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    setState((s) => (silent ? s : { ...s, loading: true }));
 
     const {
       data: { user },

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,6 @@ import {
   Animated,
   Dimensions,
   Keyboard,
-  TouchableWithoutFeedback,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getChatApiUrl } from '@/lib/nodeBackendUrl';
@@ -42,11 +41,33 @@ export default function KheiaScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
+
+  const scrollToEnd = useCallback(() => {
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, []);
 
   useEffect(() => {
-    scrollRef.current?.scrollToEnd({ animated: true });
-  }, [messages]);
+    scrollToEnd();
+  }, [messages, scrollToEnd]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+      setTimeout(scrollToEnd, 80);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [scrollToEnd]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -162,132 +183,135 @@ export default function KheiaScreen() {
   };
 
   const showFullScreenPrompt = messages.length === 0 && !loading;
-  const insets = useSafeAreaInsets();
-
   const dismissKeyboard = () => Keyboard.dismiss();
+  const inputBottomPad =
+    keyboardHeight > 0
+      ? keyboardHeight - insets.bottom + spacing.sm
+      : spacing.contentBottom + insets.bottom;
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={100}
+      behavior="padding"
+      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
     >
-      <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
-        <View style={styles.touchableContent}>
-          <View style={[styles.header, styles.headerRow, { paddingTop: insets.top + spacing.md }]}>
-            <View style={styles.headerTextWrap}>
-              <Text style={styles.title}>KHEYA</Text>
-              <Text style={styles.subtitle}>Chatbot EN & Bacalaureat</Text>
-            </View>
-            {showFullScreenPrompt && (
-              <Pressable
-                onPress={dismissKeyboard}
-                style={({ pressed }) => [styles.dismissBtn, pressed && styles.dismissBtnPressed]}
-                accessibilityLabel="Închide tastatura"
-              >
-                <Text style={styles.dismissBtnText}>Închide</Text>
-              </Pressable>
-            )}
+      <View style={styles.touchableContent}>
+        <View style={[styles.header, styles.headerRow, { paddingTop: insets.top + spacing.md }]}>
+          <View style={styles.headerTextWrap}>
+            <Text style={styles.title}>KHEYA</Text>
+            <Text style={styles.subtitle}>Chatbot EN & Bacalaureat</Text>
           </View>
-
-      {!showFullScreenPrompt ? (
-        <ScrollView
-          ref={scrollRef}
-          style={styles.messages}
-          contentContainerStyle={styles.messagesContent}
-          showsVerticalScrollIndicator={false}
-          keyboardDismissMode="on-drag"
-          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
-        >
-          {messages.map((msg, i) => (
-            <View
-              key={i}
-              style={[styles.msgRow, msg.role === 'user' ? styles.msgRowUser : styles.msgRowBot]}
+          {showFullScreenPrompt ? (
+            <Pressable
+              onPress={dismissKeyboard}
+              style={({ pressed }) => [styles.dismissBtn, pressed && styles.dismissBtnPressed]}
+              accessibilityLabel="Închide tastatura"
             >
-              <GlassCard
-                dark
-                intensity={msg.role === 'user' ? 12 : 16}
-                style={[
-                  styles.msgBubble,
-                  msg.role === 'user' ? styles.msgBubbleUser : styles.msgBubbleBot,
-                ]}
+              <Text style={styles.dismissBtnText}>Închide</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        {showFullScreenPrompt ? (
+          <View style={[styles.fullScreenPromptArea, { paddingBottom: inputBottomPad }]}>
+            <Animated.View style={[styles.tutorialWrapper, { transform: [{ scale: pulseAnim }] }]}>
+              <View style={styles.tutorialPrompt}>
+                <TextInput
+                  style={styles.fullScreenInput}
+                  placeholder=""
+                  placeholderTextColor="transparent"
+                  value={input}
+                  onChangeText={setInput}
+                  multiline
+                  maxLength={2000}
+                  editable={!loading}
+                  onFocus={scrollToEnd}
+                />
+                {!tutorialDismissed && !input.trim() ? (
+                  <View style={styles.tutorialSteps} pointerEvents="none">
+                    <Animated.Text style={[styles.tutorialStepText, { opacity: stepOpacity }]}>
+                      {TUTORIAL_STEPS[currentStepIndex]}
+                    </Animated.Text>
+                  </View>
+                ) : null}
+              </View>
+            </Animated.View>
+            <View style={styles.sendRow}>
+              <Pressable
+                onPress={sendMessage}
+                disabled={!input.trim() || loading}
+                style={({ pressed }) => [styles.sendBtn, pressed && styles.sendBtnPressed]}
               >
-                <Text style={styles.msgText}>{msg.content}</Text>
-              </GlassCard>
+                <GlassCard dark intensity={14} style={styles.sendBtnInnerFull}>
+                  <Text style={styles.sendBtnText}>→ Trimite</Text>
+                </GlassCard>
+              </Pressable>
             </View>
-          ))}
-          {loading && (
-            <View style={[styles.msgRow, styles.msgRowBot]}>
-              <GlassCard dark intensity={16} style={[styles.msgBubble, styles.msgBubbleBot]}>
-                <ActivityIndicator size="small" color="#60a5fa" />
-              </GlassCard>
-            </View>
-          )}
-        </ScrollView>
-      ) : (
-        <View style={styles.fullScreenPromptArea}>
-          <Animated.View style={[styles.tutorialWrapper, { transform: [{ scale: pulseAnim }] }]}>
-            <View style={styles.tutorialPrompt}>
+          </View>
+        ) : (
+          <>
+            <ScrollView
+              ref={scrollRef}
+              style={styles.messages}
+              contentContainerStyle={[
+                styles.messagesContent,
+                { paddingBottom: keyboardHeight > 0 ? spacing.md : spacing.lg },
+              ]}
+              showsVerticalScrollIndicator={false}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+              onContentSizeChange={scrollToEnd}
+            >
+              {messages.map((msg, i) => (
+                <View
+                  key={i}
+                  style={[styles.msgRow, msg.role === 'user' ? styles.msgRowUser : styles.msgRowBot]}
+                >
+                  <GlassCard
+                    dark
+                    intensity={msg.role === 'user' ? 12 : 16}
+                    style={[
+                      styles.msgBubble,
+                      msg.role === 'user' ? styles.msgBubbleUser : styles.msgBubbleBot,
+                    ]}
+                  >
+                    <Text style={styles.msgText}>{msg.content}</Text>
+                  </GlassCard>
+                </View>
+              ))}
+              {loading ? (
+                <View style={[styles.msgRow, styles.msgRowBot]}>
+                  <GlassCard dark intensity={16} style={[styles.msgBubble, styles.msgBubbleBot]}>
+                    <ActivityIndicator size="small" color="#60a5fa" />
+                  </GlassCard>
+                </View>
+              ) : null}
+            </ScrollView>
+            <View style={[styles.inputRow, { paddingBottom: inputBottomPad }]}>
               <TextInput
-                style={styles.fullScreenInput}
-                placeholder=""
-                placeholderTextColor="transparent"
+                style={styles.input}
+                placeholder="Întreabă despre EN sau BAC..."
+                placeholderTextColor="rgba(255,255,255,0.5)"
                 value={input}
                 onChangeText={setInput}
                 multiline
                 maxLength={2000}
                 editable={!loading}
+                onFocus={scrollToEnd}
               />
-              {!tutorialDismissed && !input.trim() && (
-                <View style={styles.tutorialSteps} pointerEvents="none">
-                  <Animated.Text
-                    style={[styles.tutorialStepText, { opacity: stepOpacity }]}
-                  >
-                    {TUTORIAL_STEPS[currentStepIndex]}
-                  </Animated.Text>
-                </View>
-              )}
+              <Pressable
+                onPress={sendMessage}
+                disabled={!input.trim() || loading}
+                style={({ pressed }) => [styles.sendBtn, pressed && styles.sendBtnPressed]}
+              >
+                <GlassCard dark intensity={14} style={styles.sendBtnInner}>
+                  <Text style={styles.sendBtnText}>→</Text>
+                </GlassCard>
+              </Pressable>
             </View>
-          </Animated.View>
-          <View style={styles.sendRow}>
-            <Pressable
-              onPress={sendMessage}
-              disabled={!input.trim() || loading}
-              style={({ pressed }) => [styles.sendBtn, pressed && styles.sendBtnPressed]}
-            >
-              <GlassCard dark intensity={14} style={styles.sendBtnInnerFull}>
-                <Text style={styles.sendBtnText}>→ Trimite</Text>
-              </GlassCard>
-            </Pressable>
-          </View>
-        </View>
-      )}
-
-      {!showFullScreenPrompt && (
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Întreabă despre EN sau BAC..."
-            placeholderTextColor="rgba(255,255,255,0.5)"
-            value={input}
-            onChangeText={setInput}
-            multiline
-            maxLength={2000}
-            editable={!loading}
-          />
-          <Pressable
-            onPress={sendMessage}
-            disabled={!input.trim() || loading}
-            style={({ pressed }) => [styles.sendBtn, pressed && styles.sendBtnPressed]}
-          >
-            <GlassCard dark intensity={14} style={styles.sendBtnInner}>
-              <Text style={styles.sendBtnText}>→</Text>
-            </GlassCard>
-          </Pressable>
-        </View>
-      )}
-        </View>
-      </TouchableWithoutFeedback>
+          </>
+        )}
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -357,8 +381,8 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: spacing.md,
-    paddingBottom: spacing.contentBottom,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
     gap: spacing.sm,
   },
   input: {
@@ -400,7 +424,6 @@ const styles = StyleSheet.create({
   fullScreenPromptArea: {
     flex: 1,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.contentBottom,
   },
   tutorialWrapper: {
     flex: 1,

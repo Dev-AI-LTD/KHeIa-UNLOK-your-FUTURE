@@ -1,6 +1,6 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { getSupabaseClient } from '../_shared/supabase-client.ts';
-import { getSupabaseUser, isUserPremium } from '../_shared/auth.ts';
+import { getSupabaseUser } from '../_shared/auth.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -35,24 +35,6 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });
-  }
-
-  // 3. Check premium status for access control
-  const premium = await isUserPremium(supabase, user.id);
-
-  if (!premium) {
-    // Check if user has already used their free test
-    const { count } = await supabase
-      .from('tests')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id);
-
-    if ((count ?? 0) >= 1) {
-      return new Response(JSON.stringify({ error: 'Free limit reached. Upgrade to Pro.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 403,
-      });
-    }
   }
 
   try {

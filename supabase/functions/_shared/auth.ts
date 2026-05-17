@@ -14,22 +14,6 @@ export const getSupabaseUser = async (req: Request) => {
   return user;
 };
 
-export const isUserPremium = async (supabase: any, userId: string): Promise<boolean> => {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('subscription_type, referral_premium_until')
-    .eq('id', userId)
-    .single();
-
-  if (!profile) return false;
-
-  if (profile.subscription_type !== 'free') return true;
-
-  if (profile.referral_premium_until) {
-    const now = new Date();
-    const until = new Date(profile.referral_premium_until);
-    if (until > now) return true;
-  }
-
-  return false;
+export const isUserPremium = async (_supabase: unknown, _userId: string): Promise<boolean> => {
+  return true;
 };

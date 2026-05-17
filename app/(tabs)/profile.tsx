@@ -21,7 +21,9 @@ import { XPBar } from '@/components/gamification/XPBar';
 import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
 import { StreakCounter } from '@/components/gamification/StreakCounter';
 import { GDPR_TEXT, PRIVACY_POLICY_TEXT, TERMS_TEXT } from '@/content/legal';
-import { signOut, deleteAccount } from '@/services/auth.service';
+import { useKindeAuth } from '@kinde/expo';
+import { signOutSupabase, deleteAccount } from '@/services/auth.service';
+import { getKindeAuthOptions } from '@/lib/kindeConfig';
 import { getSchoolLeaderboard, type SchoolLeaderboard } from '@/services/gamification.service';
 import { getProfile } from '@/services/referral.service';
 
@@ -48,6 +50,7 @@ const LEGAL_CONTENT: Record<string, string> = {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const kinde = useKindeAuth();
   const { skin, setSkin } = useSkin();
   const { coins, level, xpProgress, streak, loading: gamLoading, userId, refresh } =
     useGamification();
@@ -73,7 +76,7 @@ export default function ProfileScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void refresh();
+      void refresh({ silent: true });
     }, [refresh])
   );
 
@@ -155,7 +158,7 @@ export default function ProfileScreen() {
             {recentChapters.map((ch) => (
               <Pressable
                 key={ch.id}
-                onPress={() => router.push(`/chapter/${ch.id}`)}
+                onPress={() => router.push(`/chapter/${ch.id}/theory`)}
                 style={({ pressed }) => [styles.chapterRow, pressed && styles.chapterRowPressed]}
               >
                 <View style={styles.chapterInfo}>
@@ -306,7 +309,7 @@ export default function ProfileScreen() {
         {recommendedNext.map((ch) => (
           <Pressable
             key={ch.id}
-            onPress={() => router.push(`/chapter/${ch.id}`)}
+            onPress={() => router.push(`/chapter/${ch.id}/theory`)}
             style={({ pressed }) => [styles.planCard, pressed && styles.chapterRowPressed]}
           >
             <GlassCard dark intensity={18} style={styles.planCardInner}>
@@ -320,15 +323,11 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleLogout = async () => {
-    await signOut();
-  };
-
   const handleDeleteAccount = () => {
     if (!userId) return;
     Alert.alert(
       'Ștergere cont',
-      'Toate datele tale (profil, progres, statistici, abonament) vor fi șterse definitiv. Conform GDPR, nu poți reveni după ștergere. Ești sigur?',
+      'Toate datele tale (profil, progres, statistici) vor fi șterse definitiv. Conform GDPR, nu poți reveni după ștergere. Ești sigur?',
       [
         { text: 'Anulare', style: 'cancel' },
         {
@@ -348,7 +347,9 @@ export default function ProfileScreen() {
                     if (error) {
                       Alert.alert('Eroare', error.message ?? 'Ștergerea contului a eșuat. Încearcă din nou sau contactează contact@kheya.ro.');
                     } else {
-                      router.replace('/(tabs)/home');
+                      await signOutSupabase();
+                      await kinde.logout({ revokeToken: true, ...getKindeAuthOptions() });
+                      router.replace('/login');
                     }
                   },
                 },
@@ -362,33 +363,18 @@ export default function ProfileScreen() {
 
   const renderSetariTab = () => (
     <View style={styles.skinSection}>
-      <Text style={styles.skinTitle}>Cont</Text>
-      <Text style={styles.skinSubtitle}>
-        {userId ? 'Ești conectat. Progresul se salvează în cloud.' : 'Conectează-te pentru a salva progresul.'}
-      </Text>
-      <Pressable
-        onPress={() => (userId ? handleLogout() : router.push('/login'))}
-        style={({ pressed }) => [styles.authBtn, pressed && styles.authBtnPressed]}
-        accessibilityRole="button"
-        accessibilityLabel={userId ? 'Deconectare' : 'Autentificare'}
-      >
-        <GlassCard dark intensity={18} style={styles.authBtnInner}>
-          <Text style={styles.authBtnText}>{userId ? 'Deconectare' : 'Autentificare'}</Text>
-        </GlassCard>
-      </Pressable>
-
-      {userId && (
+      {userId ? (
         <Pressable
           onPress={handleDeleteAccount}
           style={({ pressed }) => [styles.deleteAccountBtn, pressed && styles.authBtnPressed]}
           accessibilityRole="button"
           accessibilityLabel="Șterge cont și toate datele"
         >
-        <Text style={styles.deleteAccountText}>Șterge cont (GDPR)</Text>
+          <Text style={styles.deleteAccountText}>Șterge cont (GDPR)</Text>
         </Pressable>
-      )}
+      ) : null}
 
-      <Text style={[styles.skinTitle, { marginTop: spacing.xl }]}>Temă / Skin</Text>
+      <Text style={[styles.skinTitle, userId ? { marginTop: spacing.xl } : undefined]}>Temă / Skin</Text>
       <Text style={styles.skinSubtitle}>Alege fundalul aplicației</Text>
       <View style={styles.skinOptions}>
         {Object.values(SKINS).map((s) => {

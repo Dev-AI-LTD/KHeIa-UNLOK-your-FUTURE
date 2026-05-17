@@ -8,8 +8,6 @@ import { useCatalogContext } from '@/components/common/CatalogProvider';
 import { getGeneratedChapters } from '@/lib/chapterStorage';
 import { getOfficialExamTests } from '@/services/official-tests.service';
 import { getOnboardingExam } from '@/lib/onboardingStorage';
-import { supabase } from '@/services/supabase';
-import { getSubscriptionStatus, canStartTest } from '@/services/subscription.service';
 import type { ExamType } from '@/types/tests';
 
 const YEARS = [2026, 2025, 2024, 2023, 2022];
@@ -55,16 +53,12 @@ export default function TestsScreen() {
     [examType, year, subjectId]
   );
 
-  const handleTestPress = useCallback(async (targetTestId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    const status = await getSubscriptionStatus(user?.id ?? null);
-    const allowed = await canStartTest(user?.id ?? null, status);
-    if (allowed) {
+  const handleTestPress = useCallback(
+    (targetTestId: string) => {
       router.push(`/test/${targetTestId}`);
-    } else {
-      router.push({ pathname: '/subscription', params: { source: 'test_limit' } });
-    }
-  }, [router]);
+    },
+    [router]
+  );
 
   if (loading) {
     return (

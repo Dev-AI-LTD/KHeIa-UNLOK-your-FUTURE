@@ -1,69 +1,48 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Redirect } from 'expo-router';
-import { getOnboardingDone } from '@/lib/onboardingStorage';
-import { getLegalConsentAccepted, setLegalConsentAccepted } from '@/lib/legalConsentStorage';
-import { LegalConsentOverlay } from '@/components/legal/LegalConsentOverlay';
-import { colors, typography } from '@/theme';
+import { supabase } from '@/services/supabase';
 
 export default function Index() {
   const [ready, setReady] = useState(false);
-  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
-  const [legalAccepted, setLegalAccepted] = useState<boolean | null>(null);
+  const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      const [done, legal] = await Promise.all([getOnboardingDone(), getLegalConsentAccepted()]);
-      setOnboardingDone(done);
-      setLegalAccepted(legal);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setHasSession(!!session);
       setReady(true);
-    })();
-  }, []);
+    });
 
-  const handleLegalAccept = async () => {
-    await setLegalConsentAccepted();
-    setLegalAccepted(true);
-  };
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setHasSession(!!session);
+      setReady(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   if (!ready) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingTitle}>KHEYA – Unlock Your Future</Text>
-        <ActivityIndicator size="small" color={colors.dark.primary} style={styles.spinner} />
+      <View style={styles.loading}>
+        <ActivityIndicator size="small" color="#60a5fa" />
       </View>
     );
   }
 
-  if (legalAccepted === false) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingTitle}>KHEYA – Unlock Your Future</Text>
-        <LegalConsentOverlay onAccept={handleLegalAccept} />
-      </View>
-    );
-  }
-
-  if (!onboardingDone) {
-    return <Redirect href="/prezentare" />;
+  if (!hasSession) {
+    return <Redirect href="/login" />;
   }
 
   return <Redirect href="/(tabs)/home" />;
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
+  loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
-  },
-  loadingTitle: {
-    fontSize: typography.size.xl,
-    fontWeight: '700',
-    color: colors.dark.text,
-    marginBottom: 16,
-  },
-  spinner: {
-    marginTop: 8,
   },
 });

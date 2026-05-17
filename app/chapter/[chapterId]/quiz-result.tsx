@@ -87,7 +87,7 @@ export default function ChapterQuizResultScreen() {
           )}
           {suggestedChapter && (
             <Pressable
-              onPress={() => router.push(`/chapter/${suggestedChapter.chapterId}`)}
+              onPress={() => router.push(`/chapter/${suggestedChapter.chapterId}/theory`)}
               style={({ pressed }) => [styles.suggestedBtn, pressed && styles.buttonPressed]}
             >
               <Text style={styles.suggestedBtnText}>
@@ -107,32 +107,13 @@ export default function ChapterQuizResultScreen() {
         </GlassCard>
       </Pressable>
 
-      {(fromFreeQuiz === 'true' || showDiscountOffer) && (
-        <Pressable
-          onPress={() => router.push({
-            pathname: '/subscription',
-            params: {
-              source: showDiscountOffer ? 'concierge' : 'quiz_limit',
-              discount24h: showDiscountOffer ? 'true' : 'false',
-            },
-          })}
-          style={({ pressed }) => [styles.paywallBtn, pressed && styles.buttonPressed]}
-        >
-          <GlassCard dark intensity={18} style={styles.paywallBtnInner}>
-            <Text style={styles.paywallBtnText}>
-              Deblochează 10 întrebări și acces complet →
-            </Text>
-          </GlassCard>
-        </Pressable>
-      )}
-
       <Pressable
         onPress={() => router.push('/referral')}
         style={({ pressed }) => [styles.ctaBtn, pressed && styles.buttonPressed]}
       >
         <GlassCard dark intensity={18} style={styles.ctaBtnInner}>
           <Text style={styles.ctaBtnText}>
-            Invită 5 colegi și primește 1 lună Premium gratuit!
+            Invită 5 colegi și primește bonus XP și monede!
           </Text>
         </GlassCard>
       </Pressable>

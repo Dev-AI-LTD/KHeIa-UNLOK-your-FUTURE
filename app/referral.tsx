@@ -104,12 +104,12 @@ export default function ReferralScreen() {
           </Pressable>
 
           <Text style={styles.hint}>
-            Prietenii tăi introduc codul la înregistrare. 5 invitații = 1 lună Premium gratuit!
+            Prietenii tăi introduc codul la înregistrare. La 5 invitații primești bonus XP și monede!
           </Text>
           {referredCount > 0 && (
             <Text style={styles.referralCount}>
               Ai invitat {referredCount} {referredCount === 1 ? 'persoană' : 'persoane'}.
-              {referredCount >= 5 ? ' Ai deblocat 1 lună Premium!' : ` Mai ai nevoie de ${5 - referredCount} pentru Premium.`}
+              {referredCount >= 5 ? ' Ai deblocat bonusul de referral!' : ` Mai ai nevoie de ${5 - referredCount} invitații pentru bonus.`}
             </Text>
           )}
         </>

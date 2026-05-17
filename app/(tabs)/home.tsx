@@ -37,7 +37,7 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void refresh();
+      void refresh({ silent: true });
     }, [refresh])
   );
 

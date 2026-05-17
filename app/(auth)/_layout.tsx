@@ -8,10 +8,6 @@ export default function AuthLayout() {
         contentStyle: { backgroundColor: 'transparent' },
       }}
     >
-      <Stack.Screen name="prezentare" />
-      <Stack.Screen name="onboarding" />
-      <Stack.Screen name="select-exam" />
-      <Stack.Screen name="select-level" />
       <Stack.Screen name="login" />
     </Stack>
   );

@@ -24,7 +24,6 @@ import {
 import { parseTestId, createTestRecord } from '@/services/test.service';
 import { getOfficialTestById } from '@/services/official-tests.service';
 import { buildTestShareMessage } from '@/services/deep-linking.service';
-import { getSubscriptionStatus, canStartTest } from '@/services/subscription.service';
 
 const QUESTION_COUNT = 20;
 
@@ -57,14 +56,6 @@ export default function TestSessionScreen() {
       setUserId(user?.id ?? null);
 
       if (!parsed?.subjectId) {
-        setLoading(false);
-        return;
-      }
-
-      const status = await getSubscriptionStatus(user?.id ?? null);
-      const allowed = await canStartTest(user?.id ?? null, status);
-      if (!allowed) {
-        router.replace({ pathname: '/subscription', params: { source: 'test_limit' } });
         setLoading(false);
         return;
       }

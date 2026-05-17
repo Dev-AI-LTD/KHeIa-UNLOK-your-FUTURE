@@ -1,4 +1,7 @@
-project_id = "edumat-romania"
+project_id = "lbvltfvdrsdrmpuglboh"
+
+[functions.kinde-bridge]
+verify_jwt = false
 
 [api]
 port = 54321
