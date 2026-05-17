@@ -3,7 +3,7 @@
     "name": "KHEYA - Unlock Your Future",
     "slug": "kheia",
     "scheme": "kheia",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "orientation": "default",
     "platforms": [
       "ios",
@@ -59,7 +59,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.kheia.edumat",
-      "buildNumber": "6",
+      "buildNumber": "7",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
