@@ -1,14 +1,25 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing, radius, sizes, iosText } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getGeneratedChapters, getGeneratedTheory } from '@/lib/chapterStorage';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
 import { buildTheorySections } from '@/services/chapterAudio.utils';
 import { useChapterAudio } from '@/hooks/useChapterAudio';
 import { isTtsAvailable } from '@/services/tts.client';
+import { useSubscription } from '@/hooks/useSubscription';
+import {
+  formatTtsRemaining,
+  getTtsRemainingSecondsToday,
+  FREE_TTS_DAILY_SECONDS,
+} from '@/services/ttsQuota.service';
+import {
+  hasProEntitlement,
+  isRevenueCatConfigured,
+  presentPaywall,
+} from '@/services/purchases.service';
 
 const chapterTheoryData = require('../../../assets/offline-data/chaptertheory.json') as Array<{
   chapter_id: string;
@@ -22,8 +33,53 @@ export default function ChapterTheoryScreen() {
   const { chapters: chaptersData, chapterDetails: chapterDetailsData, loading } = useCatalogContext();
   const [generatedChapters, setGeneratedChapters] = useState<typeof chaptersData>([]);
   const [generatedTheory, setGeneratedTheoryState] = useState<string[] | null>(null);
-  const { progress, isActive, isPaused, error, startListening, togglePause, stop } =
+  const { isPremium, refreshAfterPurchase } = useSubscription();
+  const { progress, isActive, isPaused, error, startListening, stopOrPause, togglePause, stop } =
     useChapterAudio();
+  const [ttsRemainingSec, setTtsRemainingSec] = useState(FREE_TTS_DAILY_SECONDS);
+
+  const refreshTtsQuota = useCallback(async (premiumOverride?: boolean) => {
+    const premium = premiumOverride ?? isPremium;
+    const remaining = await getTtsRemainingSecondsToday(premium);
+    setTtsRemainingSec(remaining);
+  }, [isPremium]);
+
+  useEffect(() => {
+    void refreshTtsQuota();
+  }, [refreshTtsQuota]);
+
+  const syncPremiumIfOwned = useCallback(async () => {
+    if (!(await hasProEntitlement())) return;
+    const status = await refreshAfterPurchase();
+    await refreshTtsQuota(status.isPremium);
+  }, [refreshAfterPurchase, refreshTtsQuota]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshTtsQuota();
+      void syncPremiumIfOwned();
+    }, [refreshTtsQuota, syncPremiumIfOwned]),
+  );
+
+  const openPremiumPaywall = useCallback(async () => {
+    if (!isRevenueCatConfigured()) {
+      Alert.alert(
+        'KHEYA Pro',
+        'Abonamentele se activează prin Google Play. Configurează RevenueCat în .env și reconstruiește app-ul.',
+      );
+      return;
+    }
+    if (await hasProEntitlement()) {
+      await syncPremiumIfOwned();
+      Alert.alert('KHEYA Pro', 'Abonamentul tău este deja activ. Poți asculta teoria fără limită.');
+      return;
+    }
+    const result = await presentPaywall();
+    if (result === 'PURCHASED' || result === 'RESTORED') {
+      const status = await refreshAfterPurchase();
+      await refreshTtsQuota(status.isPremium);
+    }
+  }, [refreshAfterPurchase, refreshTtsQuota, syncPremiumIfOwned]);
   useFocusEffect(
     useCallback(() => {
       getGeneratedChapters().then(setGeneratedChapters);
@@ -54,7 +110,23 @@ export default function ChapterTheoryScreen() {
       );
       return;
     }
-    await startListening(chapterId, listenableSections);
+    const premiumActive = isPremium || (await hasProEntitlement());
+    if (!premiumActive && ttsRemainingSec <= 0) {
+      Alert.alert(
+        'Limită zilnică atinsă',
+        'Planul gratuit include 5 minute de ascultare teorie pe zi. Treci la KHEYA Pro pentru audio nelimitat.',
+        [
+          { text: 'Anulare', style: 'cancel' },
+          { text: 'Vezi abonamente', onPress: () => void openPremiumPaywall() },
+        ],
+      );
+      return;
+    }
+    await startListening(chapterId, listenableSections, {
+      isPremium: premiumActive,
+      onQuotaExceeded: () => void openPremiumPaywall(),
+    });
+    void refreshTtsQuota();
   };
 
   if (loading) {
@@ -119,7 +191,7 @@ export default function ChapterTheoryScreen() {
 
       {canListen ? (
         <Pressable
-          onPress={isActive ? togglePause : handleListen}
+          onPress={isActive ? stopOrPause : handleListen}
           disabled={progress?.loading}
           style={({ pressed }) => [styles.listenBtn, pressed && styles.generateTheoryBtnPressed]}
         >
@@ -133,6 +205,16 @@ export default function ChapterTheoryScreen() {
             )}
           </GlassCard>
         </Pressable>
+      ) : null}
+
+      {canListen && !isPremium ? (
+        <Text style={styles.ttsQuotaHint}>
+          Ascultare gratuită azi: {formatTtsRemaining(ttsRemainingSec)} / 5:00
+          {ttsRemainingSec <= 0 ? ' — limită atinsă' : ''}
+        </Text>
+      ) : null}
+      {canListen && isPremium ? (
+        <Text style={styles.ttsQuotaHint}>KHEYA Pro — ascultare teorie nelimitată</Text>
       ) : null}
 
       {error ? <Text style={styles.audioError}>{error}</Text> : null}
@@ -224,30 +306,35 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.screenPadding,
+    paddingVertical: spacing.lg,
     paddingBottom: spacing.contentBottom,
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: spacing.screenPadding,
   },
   backRow: {
     marginBottom: spacing.sm,
+    minHeight: sizes.touchTarget,
+    minWidth: sizes.touchTarget,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
   },
   backText: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...iosText('title2'),
     color: 'rgba(255,255,255,0.9)',
   },
   screenTitle: {
-    fontSize: typography.size.sm,
+    ...iosText('footnote'),
     fontWeight: '700',
     color: 'rgba(255,255,255,0.8)',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: spacing.xs,
   },
-  generateTheoryBtn: { marginBottom: spacing.md },
+  generateTheoryBtn: { marginBottom: spacing.md, minHeight: sizes.touchTarget },
   generateTheoryBtnPressed: { opacity: 0.9 },
   generateTheoryBtnInner: {
     padding: spacing.md,
@@ -255,28 +342,38 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(59, 130, 246, 0.5)',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.md,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
   },
-  generateTheoryBtnText: { fontSize: typography.size.md, fontWeight: '600', color: '#60a5fa' },
-  listenBtn: { marginBottom: spacing.md },
+  generateTheoryBtnText: { ...iosText('headline'), color: '#60a5fa' },
+  listenBtn: { marginBottom: spacing.md, minHeight: sizes.touchTarget },
   listenBtnInner: {
     padding: spacing.md,
     backgroundColor: 'rgba(139, 92, 246, 0.28)',
     borderColor: 'rgba(167, 139, 250, 0.55)',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.md,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
   },
-  listenBtnText: { fontSize: typography.size.md, fontWeight: '700', color: '#c4b5fd' },
+  listenBtnText: { ...iosText('headline'), fontWeight: '700', color: '#c4b5fd' },
+  ttsQuotaHint: {
+    ...iosText('subhead'),
+    fontWeight: '600',
+    color: 'rgba(233, 213, 255, 0.85)',
+    marginBottom: spacing.sm,
+  },
   audioError: {
+    ...iosText('subhead'),
     color: '#f87171',
-    fontSize: typography.size.sm,
     marginBottom: spacing.md,
   },
   playerBar: {
     position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
+    left: spacing.screenPadding,
+    right: spacing.screenPadding,
   },
   playerBarInner: {
     flexDirection: 'row',
@@ -286,13 +383,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(2, 6, 23, 0.85)',
     borderColor: 'rgba(167, 139, 250, 0.4)',
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.lg,
+    minHeight: sizes.touchTarget,
   },
   playerBarLabel: {
     flex: 1,
-    fontSize: typography.size.sm,
-    color: '#e9d5ff',
+    ...iosText('subhead'),
     fontWeight: '600',
+    color: '#e9d5ff',
     marginRight: spacing.sm,
   },
   playerControls: {
@@ -300,9 +398,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   playerControlBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: sizes.touchTarget,
+    height: sizes.touchTarget,
+    borderRadius: radius.pill,
     backgroundColor: 'rgba(139, 92, 246, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -310,13 +408,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(167, 139, 250, 0.5)',
   },
   playerControlText: {
-    fontSize: 18,
-    color: '#fff',
+    ...iosText('headline'),
     fontWeight: '700',
+    color: '#fff',
   },
   chapterTitle: {
-    fontSize: typography.size.xl,
-    fontWeight: '700',
+    ...iosText('title2'),
     color: '#ffffff',
     marginBottom: spacing.lg,
   },
@@ -324,26 +421,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(2, 6, 23, 0.7)',
     borderColor: 'rgba(148, 163, 184, 0.25)',
     padding: spacing.md,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     marginBottom: spacing.md,
   },
   blockLabel: {
-    fontSize: typography.size.sm,
+    ...iosText('footnote'),
     fontWeight: '700',
     color: 'rgba(255,255,255,0.85)',
     marginBottom: spacing.sm,
     textTransform: 'uppercase',
   },
   sectionHeading: {
-    fontSize: typography.size.lg,
-    fontWeight: '700',
+    ...iosText('title3'),
     color: '#ffffff',
     marginBottom: spacing.sm,
   },
   blockText: {
-    fontSize: typography.size.md,
+    ...iosText('body'),
     color: '#ffffff',
-    lineHeight: 22,
   },
   keypointRow: {
     flexDirection: 'row',
@@ -351,65 +446,68 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   bullet: {
+    ...iosText('body'),
     color: 'rgba(255,255,255,0.8)',
     marginRight: spacing.sm,
-    fontSize: typography.size.md,
   },
   keypointText: {
     flex: 1,
-    fontSize: typography.size.md,
+    ...iosText('body'),
     color: '#ffffff',
   },
-  quizButton: { marginTop: spacing.lg },
+  quizButton: { marginTop: spacing.lg, minHeight: sizes.touchTarget },
   quizButtonInner: {
     padding: spacing.md,
     backgroundColor: 'rgba(34, 197, 94, 0.25)',
     borderColor: 'rgba(34, 197, 94, 0.5)',
     alignItems: 'center',
+    borderRadius: radius.md,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
+    borderWidth: 1,
   },
-  quizButtonText: { fontSize: typography.size.md, fontWeight: '700', color: '#4ade80' },
+  quizButtonText: { ...iosText('headline'), fontWeight: '700', color: '#4ade80' },
   doneButtonPressed: {
     opacity: 0.9,
   },
   title: {
-    fontSize: typography.size.xl,
-    fontWeight: '700',
+    ...iosText('title2'),
     color: colors.dark.text,
   },
   paywallCard: {
-    marginHorizontal: spacing.lg,
+    marginHorizontal: spacing.screenPadding,
     padding: spacing.xl,
     alignItems: 'center',
     backgroundColor: 'rgba(2, 6, 23, 0.7)',
     borderColor: 'rgba(148, 163, 184, 0.25)',
-    borderRadius: 14,
+    borderRadius: radius.lg,
   },
-  paywallEmoji: { fontSize: 48, marginBottom: spacing.md },
+  paywallEmoji: { ...iosText('largeTitle'), fontSize: spacing.xxlSpace + spacing.lg, marginBottom: spacing.md },
   paywallTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: '700',
+    ...iosText('title3'),
     color: '#ffffff',
     marginBottom: spacing.sm,
     textAlign: 'center',
   },
   paywallMessage: {
-    fontSize: typography.size.md,
+    ...iosText('body'),
     color: colors.dark.muted,
     textAlign: 'center',
     marginBottom: spacing.lg,
-    lineHeight: 22,
   },
   paywallButton: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
     backgroundColor: 'rgba(34, 197, 94, 0.4)',
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: 'rgba(34, 197, 94, 0.6)',
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
   },
   paywallButtonPressed: { opacity: 0.9 },
   paywallButtonText: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     fontWeight: '700',
     color: '#4ade80',
   },

@@ -16,6 +16,10 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { getGeneratedChapters, addGeneratedChapter, setGeneratedTheory } from '@/lib/chapterStorage';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
 import { createChapter } from '@/services/generator.service';
+import {
+  getExamTypeForSubject,
+  getFrequentExamTopics,
+} from '@/services/exam-topic-stats.service';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -32,20 +36,36 @@ export default function GenerateChapterScreen() {
 
   const subject = subjects.find((s) => s.id === subjectId);
 
-  const allSuggestions = useMemo(
+  const programSuggestions = useMemo(
     () =>
       chapters
         .filter((c) => c.subject_id === subjectId)
         .sort((a, b) => a.order - b.order)
         .map((c) => c.title),
-    [chapters, subjectId]
+    [chapters, subjectId],
   );
 
-  const filteredSuggestions = useMemo(() => {
+  const examFrequentTopics = useMemo(
+    () => (subjectId ? getFrequentExamTopics(subjectId) : []),
+    [subjectId],
+  );
+
+  const examType = getExamTypeForSubject(subject?.exam_tags);
+
+  const filteredExamTopics = useMemo(() => {
     const q = topic.trim().toLowerCase();
-    if (!q) return allSuggestions;
-    return allSuggestions.filter((title) => title.toLowerCase().includes(q));
-  }, [allSuggestions, topic]);
+    const list = examFrequentTopics.map((t) => t.topicTitle);
+    if (!q) return list;
+    return list.filter((title) => title.toLowerCase().includes(q));
+  }, [examFrequentTopics, topic]);
+
+  const filteredProgramSuggestions = useMemo(() => {
+    const q = topic.trim().toLowerCase();
+    const examSet = new Set(examFrequentTopics.map((t) => t.topicTitle.toLowerCase()));
+    const base = programSuggestions.filter((title) => !examSet.has(title.toLowerCase()));
+    if (!q) return base;
+    return base.filter((title) => title.toLowerCase().includes(q));
+  }, [programSuggestions, examFrequentTopics, topic]);
 
   const onGenerate = async () => {
     if (!topic.trim() || !subjectId) return;
@@ -126,9 +146,11 @@ export default function GenerateChapterScreen() {
         <TextInput
           style={styles.searchInput}
           placeholder={
-            allSuggestions.length > 0
-              ? `Ex: ${allSuggestions[0]}${allSuggestions[1] ? `, ${allSuggestions[1]}...` : ''}`
-              : 'Caută în programă sau scrie tema unui capitol nou...'
+            examFrequentTopics[0]
+              ? `Ex: ${examFrequentTopics[0].topicTitle}`
+              : programSuggestions[0]
+                ? `Ex: ${programSuggestions[0]}`
+                : 'Caută în programă sau scrie tema unui capitol nou...'
           }
           placeholderTextColor="rgba(255,255,255,0.5)"
           value={topic}
@@ -139,34 +161,83 @@ export default function GenerateChapterScreen() {
         />
       </GlassCard>
 
-      {allSuggestions.length > 0 && (
+      {(examFrequentTopics.length > 0 || programSuggestions.length > 0) && (
         <View style={styles.suggestionsSection}>
-          <Text style={styles.suggestionsLabel}>
-            {topic.trim()
-              ? filteredSuggestions.length > 0
-                ? `Rezultate din ${subject.name} (${filteredSuggestions.length})`
-                : 'Niciun capitol găsit — poți genera unul nou cu tema de mai sus'
-              : `Sugestii din programa ${subject.name}`}
-          </Text>
-          {filteredSuggestions.length > 0 ? (
-            <View style={styles.suggestionsGrid}>
-              {filteredSuggestions.map((title) => (
-                <Pressable
-                  key={title}
-                  onPress={() => setTopic(title)}
-                  style={({ pressed }) => [
-                    styles.suggestionChip,
-                    pressed && styles.suggestionChipPressed,
-                    topic === title && styles.suggestionChipActive,
-                  ]}
-                >
-                  <Text style={styles.suggestionChipText} numberOfLines={2}>
-                    {title}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
+          {examFrequentTopics.length > 0 && (
+            <>
+              <Text style={styles.suggestionsLabel}>
+                {topic.trim()
+                  ? filteredExamTopics.length > 0
+                    ? `Frecvent la ${examType ?? 'examen'} (${filteredExamTopics.length})`
+                    : 'Niciun subiect frecvent găsit — poți genera o temă nouă'
+                  : `Cele mai frecvente la ${examType ?? 'examen'} (2020–2025)`}
+              </Text>
+              {filteredExamTopics.length > 0 ? (
+                <View style={styles.suggestionsGrid}>
+                  {filteredExamTopics.map((title) => {
+                    const stat = examFrequentTopics.find((t) => t.topicTitle === title);
+                    return (
+                      <Pressable
+                        key={`exam-${title}`}
+                        onPress={() => setTopic(title)}
+                        style={({ pressed }) => [
+                          styles.suggestionChip,
+                          styles.suggestionChipExam,
+                          pressed && styles.suggestionChipPressed,
+                          topic === title && styles.suggestionChipActive,
+                        ]}
+                      >
+                        <Text style={styles.suggestionChipText} numberOfLines={2}>
+                          {title}
+                        </Text>
+                        {stat && !topic.trim() ? (
+                          <Text style={styles.suggestionChipMeta} numberOfLines={1}>
+                            ~{stat.appearances} subiecte · {stat.years[0]}–
+                            {stat.years[stat.years.length - 1]}
+                          </Text>
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null}
+            </>
+          )}
+
+          {filteredProgramSuggestions.length > 0 && (
+            <>
+              <Text style={[styles.suggestionsLabel, examFrequentTopics.length > 0 && styles.suggestionsLabelSpaced]}>
+                {topic.trim()
+                  ? `Din programa ${subject.name} (${filteredProgramSuggestions.length})`
+                  : `Sugestii din programa ${subject.name}`}
+              </Text>
+              <View style={styles.suggestionsGrid}>
+                {filteredProgramSuggestions.map((title) => (
+                  <Pressable
+                    key={`prog-${title}`}
+                    onPress={() => setTopic(title)}
+                    style={({ pressed }) => [
+                      styles.suggestionChip,
+                      pressed && styles.suggestionChipPressed,
+                      topic === title && styles.suggestionChipActive,
+                    ]}
+                  >
+                    <Text style={styles.suggestionChipText} numberOfLines={2}>
+                      {title}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          )}
+
+          {topic.trim() &&
+            filteredExamTopics.length === 0 &&
+            filteredProgramSuggestions.length === 0 && (
+              <Text style={styles.suggestionsEmpty}>
+                Niciun capitol găsit — poți genera unul nou cu tema de mai sus
+              </Text>
+            )}
         </View>
       )}
 
@@ -234,6 +305,14 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.85)',
     marginBottom: spacing.sm,
   },
+  suggestionsLabelSpaced: {
+    marginTop: spacing.lg,
+  },
+  suggestionsEmpty: {
+    fontSize: typography.size.sm,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: spacing.sm,
+  },
   suggestionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -247,6 +326,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(148, 163, 184, 0.3)',
     maxWidth: '100%',
+  },
+  suggestionChipExam: {
+    backgroundColor: 'rgba(234, 179, 8, 0.12)',
+    borderColor: 'rgba(234, 179, 8, 0.45)',
+  },
+  suggestionChipMeta: {
+    marginTop: 4,
+    fontSize: typography.size.xs,
+    color: 'rgba(255,255,255,0.65)',
   },
   suggestionChipPressed: { opacity: 0.9 },
   suggestionChipActive: {

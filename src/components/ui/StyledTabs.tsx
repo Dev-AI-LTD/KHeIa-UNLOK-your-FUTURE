@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing, ios, iosText, radius } from '@/theme';
 
 export type TabItem = { id: string; label: string };
 
@@ -25,10 +25,10 @@ export function StyledTabs({ tabs, activeId, onChange, fullWidth }: StyledTabsPr
               key={tab.id}
               onPress={() => onChange(tab.id)}
               style={[styles.tab, isActive && styles.tabActive]}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
             >
-              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
-                {tab.label}
-              </Text>
+              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab.label}</Text>
             </Pressable>
           );
         })}
@@ -39,12 +39,12 @@ export function StyledTabs({ tabs, activeId, onChange, fullWidth }: StyledTabsPr
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
+    marginHorizontal: spacing.screenPadding,
+    marginTop: spacing.fieldGap,
     marginBottom: spacing.sm,
     backgroundColor: 'rgba(15, 23, 42, 0.5)',
-    borderRadius: 16,
-    padding: spacing.sm,
+    borderRadius: radius.md,
+    padding: spacing.xs,
   },
   containerFullWidth: {
     marginHorizontal: 0,
@@ -52,20 +52,23 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexDirection: 'row',
     flexGrow: 0,
+    gap: spacing.xs,
   },
   tab: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    minHeight: ios.layout.minTouchTarget,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
     alignItems: 'center',
-    borderRadius: 12,
-    minWidth: 70,
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+    minWidth: 72,
   },
   tabActive: {
     backgroundColor: 'rgba(34, 197, 94, 0.25)',
   },
   tabText: {
-    fontSize: typography.size.sm,
-    fontWeight: '700',
+    ...iosText('subhead'),
+    fontWeight: '600',
     color: colors.dark.muted,
   },
   tabTextActive: {

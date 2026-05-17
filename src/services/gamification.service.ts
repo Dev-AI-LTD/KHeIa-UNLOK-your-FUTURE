@@ -329,6 +329,10 @@ export type SchoolLeaderboardEntry = {
   total_xp: number;
   coins: number;
   rank: number;
+  display_name: string | null;
+  avatar_url: string | null;
+  study_year: string | null;
+  city: string | null;
 };
 
 export type SchoolLeaderboard = {
@@ -346,15 +350,27 @@ export async function getSchoolLeaderboard(
 ): Promise<SchoolLeaderboard[]> {
   const { data: rows, error } = await supabase
     .from('profiles')
-    .select('id, school')
+    .select('id, school, display_name, avatar_url, study_year, city')
     .not('school', 'is', null);
 
   if (error || !rows?.length) return [];
 
+  type ProfileRow = {
+    id: string;
+    school: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    study_year: string | null;
+    city: string | null;
+  };
+
+  const profileById = new Map<string, ProfileRow>();
   const schoolIds = new Map<string, string[]>();
-  for (const r of rows as { id: string; school: string }[]) {
+
+  for (const r of rows as ProfileRow[]) {
     const school = (r.school ?? '').trim();
     if (!school) continue;
+    profileById.set(r.id, r);
     const list = schoolIds.get(school) ?? [];
     list.push(r.id);
     schoolIds.set(school, list);
@@ -369,13 +385,20 @@ export async function getSchoolLeaderboard(
       .order('total_xp', { ascending: false })
       .limit(limitPerSchool);
 
-    const entries: SchoolLeaderboardEntry[] = (gam ?? []).map((g, i) => ({
-      user_id: g.user_id,
-      school,
-      total_xp: g.total_xp ?? 0,
-      coins: g.coins ?? 0,
-      rank: i + 1,
-    })) as SchoolLeaderboardEntry[];
+    const entries: SchoolLeaderboardEntry[] = (gam ?? []).map((g, i) => {
+      const profile = profileById.get(g.user_id);
+      return {
+        user_id: g.user_id,
+        school,
+        total_xp: g.total_xp ?? 0,
+        coins: g.coins ?? 0,
+        rank: i + 1,
+        display_name: profile?.display_name ?? null,
+        avatar_url: profile?.avatar_url ?? null,
+        study_year: profile?.study_year ?? null,
+        city: profile?.city ?? null,
+      };
+    });
 
     if (entries.length > 0) {
       result.push({ school, entries });

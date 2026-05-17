@@ -1,5 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing } from '@/theme';
+import { Text } from 'react-native';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { gamificationStyles as styles } from '@/components/gamification/gamification.styles';
 
 type DailyMissionProps = {
   text: string;
@@ -7,19 +8,8 @@ type DailyMissionProps = {
 
 export const DailyMission = ({ text }: DailyMissionProps) => {
   return (
-    <View style={styles.card}>
-      <Text style={styles.text}>{text}</Text>
-    </View>
+    <GlassCard dark intensity={14}>
+      <Text style={styles.missionText}>{text}</Text>
+    </GlassCard>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.light.surface,
-    borderRadius: 16,
-    padding: spacing.md,
-  },
-  text: {
-    color: colors.light.text,
-  },
-});

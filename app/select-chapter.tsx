@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing, typography, ios } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getGeneratedChapters } from '@/lib/chapterStorage';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
@@ -55,7 +55,7 @@ export default function SelectChapterScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.screenPadding }]}
       showsVerticalScrollIndicator={false}
     >
       <Pressable
@@ -89,7 +89,7 @@ export default function SelectChapterScreen() {
           <Pressable
             key={chapter.id}
             onPress={() => onSelect(chapter.id)}
-            style={({ pressed }) => [pressed && styles.cardPressed]}
+            style={({ pressed }) => [styles.cardPressable, pressed && styles.cardPressed]}
           >
             <GlassCard dark intensity={18} style={styles.card}>
               <Text style={styles.cardTitle}>{chapter.title}</Text>
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.screenPadding,
     paddingBottom: spacing.contentBottom,
   },
   centered: {
@@ -118,26 +118,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backRow: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.fieldGap,
+    minHeight: ios.layout.minTarget,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
   },
   backText: {
     fontSize: typography.size.md,
     fontWeight: '600',
     color: colors.dark.secondary,
+    textAlign: 'left',
   },
   title: {
     fontSize: typography.size.xl,
     fontWeight: '700',
     color: '#ffffff',
     marginBottom: spacing.xs,
+    textAlign: 'left',
   },
   subtitle: {
-    fontSize: typography.size.sm,
+    fontSize: typography.size.md,
     color: 'rgba(255,255,255,0.8)',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sectionGap,
+    textAlign: 'left',
   },
   list: {
-    gap: spacing.sm,
+    gap: spacing.fieldGap,
+  },
+  cardPressable: {
+    minHeight: ios.layout.minTarget,
   },
   cardPressed: {
     opacity: 0.9,
@@ -145,34 +154,38 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: spacing.cardPadding,
+    minHeight: ios.layout.minTarget,
     backgroundColor: 'rgba(2, 6, 23, 0.78)',
     borderColor: 'rgba(148, 163, 184, 0.3)',
     borderWidth: 1,
+    borderRadius: ios.radius.md,
   },
   cardTitle: {
     flex: 1,
     fontSize: typography.size.md,
     fontWeight: '600',
     color: '#ffffff',
+    textAlign: 'left',
   },
   cardMeta: {
     fontSize: typography.size.sm,
     color: 'rgba(255,255,255,0.75)',
     marginRight: spacing.sm,
+    textAlign: 'left',
   },
   cardArrow: {
     fontSize: typography.size.lg,
     color: 'rgba(255,255,255,0.7)',
   },
   emptyState: {
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sectionGap,
+    paddingHorizontal: spacing.screenPadding,
   },
   emptyText: {
     fontSize: typography.size.md,
     color: 'rgba(255,255,255,0.75)',
-    textAlign: 'center',
+    textAlign: 'left',
     lineHeight: 22,
   },
 });

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing, radius, sizes, iosText } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
 import { useGamification } from '@/hooks/useGamification';
@@ -203,25 +203,26 @@ const styles = StyleSheet.create({
   },
   topTabs: {
     flexDirection: 'row',
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
+    marginHorizontal: spacing.screenPadding,
+    marginTop: spacing.fieldGap,
     marginBottom: spacing.sm,
     backgroundColor: 'rgba(15, 23, 42, 0.5)',
-    borderRadius: 16,
-    padding: spacing.sm,
+    borderRadius: radius.md,
+    padding: spacing.xs,
   },
   topTab: {
     flex: 1,
-    paddingVertical: spacing.md,
+    minHeight: sizes.touchTarget,
+    paddingVertical: spacing.sm,
     alignItems: 'center',
-    borderRadius: 12,
+    justifyContent: 'center',
+    borderRadius: radius.sm,
   },
   topTabActive: {
     backgroundColor: 'rgba(34, 197, 94, 0.25)',
   },
   topTabText: {
-    fontSize: typography.size.md,
-    fontWeight: '700',
+    ...iosText('headline'),
     color: colors.dark.muted,
   },
   topTabTextActive: {
@@ -235,7 +236,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.screenPadding,
+    paddingTop: spacing.fieldGap,
     paddingBottom: spacing.contentBottom,
   },
   progressContent: {
@@ -246,16 +248,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: spacing.xlSpace + spacing.lg,
+    height: spacing.xlSpace + spacing.lg,
+    borderRadius: radius.pill,
     backgroundColor: colors.dark.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: typography.size.xl,
-    fontWeight: '700',
+    ...iosText('title3'),
     color: '#fff',
   },
   headerRight: {
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
   },
   level: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     fontWeight: '600',
     color: colors.dark.text,
     marginBottom: spacing.xs,
@@ -275,16 +276,16 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   section: {
-    marginTop: spacing.xl,
+    marginTop: spacing.sectionGap,
   },
   sectionTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: '700',
+    ...iosText('title3'),
     color: colors.dark.text,
     marginBottom: spacing.sm,
+    textAlign: 'left',
   },
   missionWrap: {
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   hero: {
     alignItems: 'center',
@@ -296,20 +297,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   heroTitle: {
-    fontSize: typography.size.xxl,
-    fontWeight: '700',
+    ...iosText('title1'),
     color: colors.dark.text,
     textAlign: 'center',
   },
   heroSubtitle: {
     marginTop: spacing.sm,
-    fontSize: typography.size.lg,
+    ...iosText('title3'),
     color: colors.dark.muted,
     textAlign: 'center',
   },
   heroBody: {
     marginTop: spacing.sm,
-    fontSize: typography.size.md,
+    ...iosText('body'),
     color: colors.dark.text,
     textAlign: 'center',
   },
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     width: '100%',
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: 'rgba(148, 163, 184, 0.2)',
@@ -329,9 +329,10 @@ const styles = StyleSheet.create({
   examEntry: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: sizes.touchTarget,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
-    borderRadius: 12,
+    borderRadius: radius.md,
     marginTop: spacing.xs,
   },
   examEntryLast: {
@@ -343,36 +344,35 @@ const styles = StyleSheet.create({
   },
   examEntryLabel: {
     flex: 1,
-    fontSize: typography.size.md,
-    fontWeight: '600',
+    ...iosText('headline'),
     color: colors.dark.text,
   },
   examEntryCount: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
     marginRight: spacing.sm,
   },
   examEntryArrow: {
-    fontSize: typography.size.lg,
+    ...iosText('title3'),
     color: colors.dark.muted,
   },
   chartTitle: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     fontWeight: '700',
     color: colors.dark.text,
     marginBottom: spacing.md,
   },
   chartBarBg: {
     flex: 1,
-    height: 10,
+    height: spacing.sm + spacing.xs,
     backgroundColor: 'rgba(15, 23, 42, 0.8)',
-    borderRadius: 5,
+    borderRadius: radius.sm,
     overflow: 'hidden',
   },
   chartBarFill: {
     height: '100%',
     backgroundColor: colors.dark.primary,
-    borderRadius: 5,
+    borderRadius: radius.sm,
   },
   statsRow: {
     flexDirection: 'row',
@@ -384,25 +384,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: typography.size.xl,
-    fontWeight: '700',
+    ...iosText('title2'),
     color: colors.dark.text,
   },
   statLabel: {
-    fontSize: typography.size.xs,
+    ...iosText('caption1'),
     color: colors.dark.muted,
     marginTop: spacing.tight,
   },
   statDivider: {
-    width: 1,
-    height: 32,
+    width: StyleSheet.hairlineWidth,
+    height: spacing.xlSpace,
     backgroundColor: 'rgba(148, 163, 184, 0.3)',
   },
   xpBarWrap: {
     marginTop: spacing.sm,
   },
   xpBarLabel: {
-    fontSize: typography.size.xs,
+    ...iosText('caption1'),
     color: colors.dark.muted,
     marginTop: spacing.xs,
   },

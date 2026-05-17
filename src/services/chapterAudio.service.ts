@@ -12,15 +12,23 @@ export type ChapterAudioProgress = {
   fromCache: boolean;
 };
 
-type AudioModule = typeof import('expo-av');
+import {
+  createAudioPlayer,
+  setAudioModeAsync,
+  type AudioPlayer,
+  type AudioStatus,
+} from 'expo-audio';
 
-let audioModule: AudioModule | null = null;
+let audioModeReady = false;
 
-async function getAudio(): Promise<AudioModule> {
-  if (!audioModule) {
-    audioModule = await import('expo-av');
-  }
-  return audioModule;
+async function ensureAudioMode(): Promise<void> {
+  if (audioModeReady) return;
+  await setAudioModeAsync({
+    playsInSilentMode: true,
+    shouldPlayInBackground: false,
+    interruptionMode: 'duckOthers',
+  });
+  audioModeReady = true;
 }
 
 function audioRootDir(): Directory {
@@ -38,7 +46,7 @@ function sectionFile(chapterId: string, hash: string, index: number): File {
 function ensureAudioRoot(): void {
   const root = audioRootDir();
   if (!root.exists) {
-    root.create({ intermediates: true });
+    root.create({ intermediates: true, idempotent: true });
   }
 }
 
@@ -82,13 +90,21 @@ async function ensureSectionCached(
   const buffer = await fetchChapterTtsAudio(text, chapterId);
   const dir = chapterCacheDir(chapterId, hash);
   if (!dir.exists) {
-    dir.create({ intermediates: true });
+    dir.create({ intermediates: true, idempotent: true });
   }
 
-  if (!file.exists) {
-    file.create();
-  }
+  file.create({ overwrite: true, idempotent: true });
   file.write(new Uint8Array(buffer));
+
+  if (!file.exists) {
+    throw new Error('Nu s-a putut salva fișierul audio pe dispozitiv.');
+  }
+
+  const saved = await file.bytes();
+  if (saved.byteLength < 100) {
+    file.delete();
+    throw new Error('Audio invalid după descărcare. Încearcă din nou.');
+  }
 
   return file.uri;
 }
@@ -113,18 +129,25 @@ export type ChapterAudioPlayerCallbacks = {
   onComplete?: () => void;
 };
 
-type SoundInstance = import('expo-av').Audio.Sound;
-
 export class ChapterAudioPlayer {
-  private sound: SoundInstance | null = null;
+  private player: AudioPlayer | null = null;
+
+  private playbackListener: { remove: () => void } | null = null;
 
   private stopped = false;
 
   private paused = false;
 
+  /** Incremented on stop() to cancel in-flight prepare / playSectionAt chains. */
+  private sessionId = 0;
+
   private sectionPaths: string[] = [];
 
   private currentIndex = 0;
+
+  private isSessionCurrent(session: number): boolean {
+    return !this.stopped && session === this.sessionId;
+  }
 
   async prepare(
     chapterId: string,
@@ -135,11 +158,7 @@ export class ChapterAudioPlayer {
       throw new Error('Nu există text de ascultat pentru acest capitol.');
     }
 
-    const { Audio } = await getAudio();
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: false,
-    });
+    await ensureAudioMode();
 
     const hash = await getContentHash(chapterId, sections);
     await pruneOldChapterCaches(chapterId, hash);
@@ -157,8 +176,9 @@ export class ChapterAudioPlayer {
     }
 
     this.sectionPaths = [];
+    const session = this.sessionId;
     for (let i = 0; i < sections.length; i += 1) {
-      if (this.stopped) return;
+      if (!this.isSessionCurrent(session)) return;
       callbacks.onProgress?.({
         sectionIndex: i,
         totalSections: sections.length,
@@ -180,14 +200,24 @@ export class ChapterAudioPlayer {
   async play(callbacks: ChapterAudioPlayerCallbacks = {}): Promise<void> {
     this.stopped = false;
     this.paused = false;
+    this.sessionId += 1;
+    const session = this.sessionId;
     this.currentIndex = 0;
-    await this.playSectionAt(this.currentIndex, callbacks);
+    await this.playSectionAt(this.currentIndex, callbacks, session);
   }
 
-  private async playSectionAt(index: number, callbacks: ChapterAudioPlayerCallbacks): Promise<void> {
-    if (this.stopped || index >= this.sectionPaths.length) {
-      await this.unloadSound();
-      callbacks.onComplete?.();
+  private async playSectionAt(
+    index: number,
+    callbacks: ChapterAudioPlayerCallbacks,
+    session: number,
+  ): Promise<void> {
+    if (!this.isSessionCurrent(session) || index >= this.sectionPaths.length) {
+      if (session === this.sessionId) {
+        this.releasePlayer();
+        if (!this.stopped && index >= this.sectionPaths.length) {
+          callbacks.onComplete?.();
+        }
+      }
       return;
     }
 
@@ -199,53 +229,95 @@ export class ChapterAudioPlayer {
       fromCache: true,
     });
 
-    await this.unloadSound();
-    const { Audio } = await getAudio();
-    const { sound } = await Audio.Sound.createAsync(
-      { uri: this.sectionPaths[index] },
-      { shouldPlay: true },
-    );
-    this.sound = sound;
+    this.releasePlayer();
 
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (!status.isLoaded || this.stopped || this.paused) return;
-      if (status.didJustFinish) {
-        void this.playSectionAt(index + 1, callbacks);
+    const uri = this.sectionPaths[index];
+    try {
+      await ensureAudioMode();
+      if (!this.isSessionCurrent(session)) return;
+
+      const player = createAudioPlayer({ uri }, { downloadFirst: false });
+      if (!this.isSessionCurrent(session)) {
+        this.disposePlayer(player);
+        return;
       }
-    });
+
+      this.player = player;
+
+      this.playbackListener = player.addListener(
+        'playbackStatusUpdate',
+        (status: AudioStatus) => {
+          if (!this.isSessionCurrent(session) || this.paused) return;
+          if (status.didJustFinish) {
+            void this.playSectionAt(index + 1, callbacks, session);
+          }
+        },
+      );
+
+      if (!this.isSessionCurrent(session) || this.paused) {
+        this.releasePlayer();
+        return;
+      }
+
+      player.play();
+    } catch (e) {
+      if (!this.isSessionCurrent(session)) return;
+      const message = e instanceof Error ? e.message : 'Nu s-a putut reda secțiunea audio.';
+      callbacks.onError?.(new Error(message));
+      throw new Error(message);
+    }
   }
 
   async pause(): Promise<void> {
     this.paused = true;
-    if (this.sound) {
-      await this.sound.pauseAsync();
+    try {
+      this.player?.pause();
+    } catch {
+      // ignore
     }
   }
 
   async resume(callbacks: ChapterAudioPlayerCallbacks = {}): Promise<void> {
     if (this.stopped) return;
     this.paused = false;
-    if (this.sound) {
-      await this.sound.playAsync();
+    const session = this.sessionId;
+    if (this.player) {
+      try {
+        this.player.play();
+      } catch {
+        await this.playSectionAt(this.currentIndex, callbacks, session);
+      }
       return;
     }
-    await this.playSectionAt(this.currentIndex, callbacks);
+    await this.playSectionAt(this.currentIndex, callbacks, session);
   }
 
   async stop(): Promise<void> {
     this.stopped = true;
     this.paused = false;
-    await this.unloadSound();
+    this.sessionId += 1;
+    this.releasePlayer();
   }
 
-  private async unloadSound(): Promise<void> {
-    if (this.sound) {
-      try {
-        await this.sound.unloadAsync();
-      } catch {
-        // ignore unload errors
-      }
-      this.sound = null;
+  private disposePlayer(player: AudioPlayer): void {
+    try {
+      player.pause();
+    } catch {
+      // ignore
+    }
+    try {
+      player.remove();
+    } catch {
+      // ignore
+    }
+  }
+
+  private releasePlayer(): void {
+    this.playbackListener?.remove();
+    this.playbackListener = null;
+    if (this.player) {
+      this.disposePlayer(this.player);
+      this.player = null;
     }
   }
 }

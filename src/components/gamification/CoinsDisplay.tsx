@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, typography } from '@/theme';
+import { Text, View } from 'react-native';
+import { gamificationStyles as styles } from '@/components/gamification/gamification.styles';
 
 type CoinsDisplayProps = {
   coins: number;
@@ -7,25 +7,9 @@ type CoinsDisplayProps = {
 
 export const CoinsDisplay = ({ coins }: CoinsDisplayProps) => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.icon}>🪙</Text>
-      <Text style={styles.text}>Ai {coins} monede</Text>
+    <View style={styles.statRow}>
+      <Text style={styles.statIcon}>🪙</Text>
+      <Text style={styles.statText}>Ai {coins} monede</Text>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  icon: {
-    fontSize: 20,
-    marginRight: spacing.sm,
-  },
-  text: {
-    fontSize: typography.size.md,
-    fontWeight: '600',
-    color: colors.dark.text,
-  },
-});

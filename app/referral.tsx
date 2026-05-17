@@ -10,13 +10,15 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { colors, spacing, typography } from '@/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, spacing, radius, sizes, iosText } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getOrCreateProfile, buildReferralShareMessage, getReferredCount } from '@/services/referral.service';
 import { supabase } from '@/services/supabase';
 
 export default function ReferralScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referredCount, setReferredCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -64,7 +66,7 @@ export default function ReferralScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
+      <View style={[styles.centered, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <ActivityIndicator size="large" color={colors.dark.primary} />
       </View>
     );
@@ -73,7 +75,10 @@ export default function ReferralScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + spacing.screenPadding, paddingBottom: insets.bottom + spacing.contentBottom },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
@@ -146,119 +151,135 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   content: {
-    padding: spacing.lg,
-    paddingBottom: spacing.contentBottom ?? spacing.xl * 2,
+    paddingHorizontal: spacing.screenPadding,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: spacing.screenPadding,
   },
   header: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.sectionGap,
   },
   title: {
-    fontSize: typography.size.xl,
-    fontWeight: '700',
+    ...iosText('title2'),
     color: colors.dark.text,
+    textAlign: 'left',
   },
   subtitle: {
-    marginTop: spacing.sm,
-    fontSize: typography.size.md,
+    marginTop: spacing.fieldGap,
+    ...iosText('body'),
     color: colors.dark.muted,
-    lineHeight: 22,
+    textAlign: 'left',
   },
   card: {
-    padding: spacing.xl,
-    alignItems: 'center',
-    marginBottom: spacing.lg,
+    padding: spacing.cardPadding,
+    alignItems: 'flex-start',
+    marginBottom: spacing.sectionGap,
+    borderRadius: radius.lg,
   },
   cardLabel: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
     marginBottom: spacing.sm,
+    textAlign: 'left',
   },
   code: {
-    fontSize: 32,
-    fontWeight: '700',
-    letterSpacing: 4,
+    ...iosText('largeTitle'),
+    letterSpacing: spacing.xs,
     color: colors.dark.primary,
+    textAlign: 'left',
   },
   shareBtn: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.fieldGap,
+    minHeight: sizes.touchTarget,
   },
   shareBtnPressed: {
     opacity: 0.9,
   },
   shareBtnInner: {
-    padding: spacing.lg,
-    alignItems: 'center',
+    padding: spacing.cardPadding,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
     backgroundColor: 'rgba(34, 197, 94, 0.2)',
     borderColor: 'rgba(34, 197, 94, 0.4)',
+    borderRadius: radius.md,
   },
   shareBtnText: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     fontWeight: '700',
     color: '#22C55E',
+    textAlign: 'left',
   },
   hint: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
-    textAlign: 'center',
+    textAlign: 'left',
     marginBottom: spacing.sm,
   },
   referralCount: {
-    fontSize: typography.size.sm,
-    color: colors.dark.primary,
+    ...iosText('subhead'),
     fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: spacing.xl,
+    color: colors.dark.primary,
+    textAlign: 'left',
+    marginBottom: spacing.sectionGap,
   },
   emptyState: {
-    padding: spacing.xl,
-    alignItems: 'center',
+    padding: spacing.sectionGap,
+    alignItems: 'flex-start',
   },
   emptyTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: '600',
+    ...iosText('title3'),
     color: colors.dark.text,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   emptySubtitle: {
-    marginTop: spacing.sm,
-    fontSize: typography.size.md,
+    marginTop: spacing.fieldGap,
+    ...iosText('body'),
     color: colors.dark.muted,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
+    textAlign: 'left',
+    marginBottom: spacing.sectionGap,
   },
   authBtn: {
-    marginTop: spacing.sm,
+    marginTop: spacing.fieldGap,
+    minHeight: sizes.touchTarget,
+    alignSelf: 'stretch',
   },
   authBtnPressed: {
     opacity: 0.9,
   },
   authBtnInner: {
-    padding: spacing.lg,
-    alignItems: 'center',
+    padding: spacing.cardPadding,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
     backgroundColor: 'rgba(59, 130, 246, 0.2)',
     borderColor: 'rgba(59, 130, 246, 0.4)',
+    borderRadius: radius.md,
   },
   authBtnText: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     fontWeight: '700',
     color: '#60a5fa',
+    textAlign: 'left',
   },
   backBtn: {
-    alignSelf: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    alignSelf: 'flex-start',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.screenPadding,
+    minHeight: sizes.touchTarget,
+    minWidth: sizes.touchTarget,
+    justifyContent: 'center',
+    marginTop: spacing.sectionGap,
   },
   backBtnPressed: {
     opacity: 0.9,
   },
   backBtnText: {
-    fontSize: typography.size.md,
-    fontWeight: '600',
+    ...iosText('headline'),
     color: colors.dark.muted,
+    textAlign: 'left',
   },
 });

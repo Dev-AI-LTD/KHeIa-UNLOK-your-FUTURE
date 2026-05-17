@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing, typography, ios } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
 import { getGeneratedChapters } from '@/lib/chapterStorage';
@@ -71,7 +71,7 @@ export default function TestsScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.screenPadding }]}
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.title}>Teste</Text>
@@ -316,28 +316,43 @@ export default function TestsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   centered: { justifyContent: 'center', alignItems: 'center' },
-  content: { padding: spacing.lg, paddingBottom: spacing.contentBottom },
-  title: { fontSize: typography.size.xl, fontWeight: '700', color: '#ffffff', marginBottom: spacing.xs },
-  subtitle: { fontSize: typography.size.sm, color: 'rgba(255,255,255,0.8)', marginBottom: spacing.lg },
+  content: {
+    paddingHorizontal: spacing.screenPadding,
+    paddingBottom: spacing.contentBottom,
+  },
+  title: {
+    fontSize: typography.size.xl,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: spacing.xs,
+    textAlign: 'left',
+  },
+  subtitle: {
+    fontSize: typography.size.md,
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: spacing.sectionGap,
+    textAlign: 'left',
+  },
   sectionCard: {
-    marginTop: spacing.lg,
-    padding: spacing.lg,
-    borderRadius: 16,
+    marginTop: spacing.sectionGap,
+    padding: spacing.cardPadding,
+    borderRadius: ios.radius.lg,
     width: '100%',
   },
   segmented: {
     flexDirection: 'row',
-    borderRadius: 12,
-    padding: spacing.tight,
+    borderRadius: ios.radius.md,
+    padding: spacing.xs,
   },
   segment: {
     flex: 1,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.xs,
-    borderRadius: 8,
+    borderRadius: ios.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 0,
+    minHeight: ios.layout.minTarget,
   },
   segmentActive: {
     backgroundColor: colors.dark.primary,
@@ -354,38 +369,75 @@ const styles = StyleSheet.create({
   generateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: spacing.cardPadding,
+    minHeight: ios.layout.minTarget,
     backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderRadius: 12,
+    borderRadius: ios.radius.md,
     borderWidth: 1,
     borderColor: 'rgba(59, 130, 246, 0.4)',
   },
   generateCardTextWrap: { flex: 1, minWidth: 0 },
-  generateCardTitle: { fontSize: typography.size.md, fontWeight: '700', color: '#ffffff' },
-  generateCardMeta: { fontSize: typography.size.sm, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
-  sectionTitle: { fontSize: typography.size.lg, fontWeight: '700', color: '#ffffff', marginTop: spacing.lg, marginBottom: spacing.xs },
-  sectionDesc: { fontSize: typography.size.sm, color: 'rgba(255,255,255,0.75)', marginBottom: spacing.sm },
-  list: { gap: spacing.sm },
+  generateCardTitle: {
+    fontSize: typography.size.md,
+    fontWeight: '700',
+    color: '#ffffff',
+    textAlign: 'left',
+  },
+  generateCardMeta: {
+    fontSize: typography.size.sm,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: spacing.xs,
+    textAlign: 'left',
+  },
+  sectionTitle: {
+    fontSize: typography.size.lg,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginTop: spacing.sectionGap,
+    marginBottom: spacing.xs,
+    textAlign: 'left',
+  },
+  sectionDesc: {
+    fontSize: typography.size.sm,
+    color: 'rgba(255,255,255,0.75)',
+    marginBottom: spacing.fieldGap,
+    textAlign: 'left',
+  },
+  list: { gap: spacing.fieldGap },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: spacing.cardPadding,
+    minHeight: ios.layout.minTarget,
     backgroundColor: 'rgba(2, 6, 23, 0.5)',
-    borderRadius: 12,
+    borderRadius: ios.radius.md,
     borderWidth: 1,
     borderColor: 'rgba(148, 163, 184, 0.2)',
   },
   cardPressed: { opacity: 0.9 },
-  cardTitle: { flex: 1, fontSize: typography.size.md, fontWeight: '600', color: '#ffffff' },
-  cardMeta: { fontSize: typography.size.sm, color: 'rgba(255,255,255,0.75)', marginRight: spacing.sm },
+  cardTitle: {
+    flex: 1,
+    fontSize: typography.size.md,
+    fontWeight: '600',
+    color: '#ffffff',
+    textAlign: 'left',
+  },
+  cardMeta: {
+    fontSize: typography.size.sm,
+    color: 'rgba(255,255,255,0.75)',
+    marginRight: spacing.sm,
+    textAlign: 'left',
+  },
   cardArrow: { fontSize: typography.size.lg, color: 'rgba(255,255,255,0.7)' },
-  filterRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
-  chipsScroll: { marginBottom: spacing.md },
-  chipsContent: { paddingRight: spacing.lg },
+  filterRow: { flexDirection: 'row', gap: spacing.fieldGap, marginBottom: spacing.fieldGap },
+  chipsScroll: { marginBottom: spacing.fieldGap },
+  chipsContent: { paddingRight: spacing.screenPadding },
   chip: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    borderRadius: 8,
+    minHeight: ios.layout.minTarget,
+    justifyContent: 'center',
+    borderRadius: ios.radius.sm,
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
     borderWidth: 1,
     borderColor: 'rgba(148, 163, 184, 0.2)',
@@ -399,6 +451,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size.sm,
     fontWeight: '600',
     color: colors.dark.text,
+    textAlign: 'left',
   },
   chipTextActive: {
     color: '#fff',
@@ -407,8 +460,20 @@ const styles = StyleSheet.create({
     fontSize: typography.size.md,
     color: colors.dark.muted,
     lineHeight: 22,
+    textAlign: 'left',
   },
-  emptyCta: { marginTop: spacing.lg, padding: spacing.md, alignItems: 'center' },
+  emptyCta: {
+    marginTop: spacing.sectionGap,
+    padding: spacing.cardPadding,
+    minHeight: ios.layout.minTarget,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
   emptyCtaPressed: { opacity: 0.9 },
-  emptyCtaText: { fontSize: typography.size.md, fontWeight: '600', color: '#60a5fa' },
+  emptyCtaText: {
+    fontSize: typography.size.md,
+    fontWeight: '600',
+    color: '#60a5fa',
+    textAlign: 'left',
+  },
 });

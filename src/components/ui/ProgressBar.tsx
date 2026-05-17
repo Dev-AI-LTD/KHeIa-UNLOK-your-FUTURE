@@ -1,9 +1,11 @@
 import { StyleSheet, View } from 'react-native';
-import { colors } from '@/theme';
+import { colors, ios } from '@/theme';
 
 type ProgressBarProps = {
   progress: number;
 };
+
+const TRACK_HEIGHT = 4;
 
 export const ProgressBar = ({ progress }: ProgressBarProps) => {
   return (
@@ -15,13 +17,14 @@ export const ProgressBar = ({ progress }: ProgressBarProps) => {
 
 const styles = StyleSheet.create({
   track: {
-    height: 8,
-    borderRadius: 4,
+    height: TRACK_HEIGHT,
+    borderRadius: ios.radius.sm / 2,
     backgroundColor: 'rgba(15, 23, 42, 0.7)',
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
     backgroundColor: colors.dark.primary,
+    borderRadius: ios.radius.sm / 2,
   },
 });

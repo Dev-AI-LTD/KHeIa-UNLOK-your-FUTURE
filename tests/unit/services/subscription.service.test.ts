@@ -29,12 +29,16 @@ describe('subscription.service (unit)', () => {
       planType: 'free',
       currentPeriodEnd: null,
       referralPremiumUntil: null,
+      isCancelled: false,
+      willRenew: false,
     };
     const premiumStatus: SubscriptionStatus = {
       isPremium: true,
       planType: 'monthly',
       currentPeriodEnd: '2025-12-31T00:00:00Z',
       referralPremiumUntil: null,
+      isCancelled: false,
+      willRenew: true,
     };
 
     it('premium can access any chapter', () => {
@@ -67,8 +71,8 @@ describe('subscription.service (unit)', () => {
       expect(FREE_TESTS_LIMIT).toBe(1);
     });
     it('SUBSCRIPTION_PRICES_RON has expected values', () => {
-      expect(SUBSCRIPTION_PRICES_RON.monthly).toBe(29);
-      expect(SUBSCRIPTION_PRICES_RON.yearly).toBe(249);
+      expect(SUBSCRIPTION_PRICES_RON.monthly).toBe(30);
+      expect(SUBSCRIPTION_PRICES_RON.yearly).toBe(300);
       expect(SUBSCRIPTION_PRICES_RON.full_edumat).toBe(399);
     });
   });

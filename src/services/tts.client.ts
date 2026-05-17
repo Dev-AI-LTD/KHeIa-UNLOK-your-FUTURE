@@ -1,5 +1,6 @@
 import { getNodeBackendUrl } from '@/lib/nodeBackendUrl';
 import { supabase, supabaseAnonKey, supabaseUrl } from '@/services/supabase';
+import { isLikelyMp3Buffer, parseTtsErrorFromBuffer } from '@/utils/audio';
 
 type TtsErrorBody = { error?: string };
 
@@ -16,6 +17,18 @@ async function parseTtsError(res: Response, fallback: string): Promise<string> {
   return `${fallback} (${res.status})`;
 }
 
+function assertValidMp3Buffer(buffer: ArrayBuffer): void {
+  const jsonError = parseTtsErrorFromBuffer(buffer);
+  if (jsonError) {
+    throw new Error(jsonError);
+  }
+  if (!isLikelyMp3Buffer(buffer)) {
+    throw new Error(
+      'Răspuns invalid de la serverul TTS. Verifică OPENAI_API_KEY pe Supabase sau redeploy backend.',
+    );
+  }
+}
+
 async function fetchTtsFromNodeBackend(text: string, chapterId: string): Promise<ArrayBuffer | null> {
   const base = getNodeBackendUrl();
   if (!base) return null;
@@ -27,7 +40,9 @@ async function fetchTtsFromNodeBackend(text: string, chapterId: string): Promise
   });
 
   if (res.ok) {
-    return res.arrayBuffer();
+    const buffer = await res.arrayBuffer();
+    assertValidMp3Buffer(buffer);
+    return buffer;
   }
 
   if (res.status === 404) {
@@ -56,7 +71,9 @@ async function fetchTtsFromSupabaseEdge(text: string, chapterId: string): Promis
     throw new Error(await parseTtsError(res, 'Eroare TTS'));
   }
 
-  return res.arrayBuffer();
+  const buffer = await res.arrayBuffer();
+  assertValidMp3Buffer(buffer);
+  return buffer;
 }
 
 export function isTtsAvailable(): boolean {

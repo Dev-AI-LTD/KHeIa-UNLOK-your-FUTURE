@@ -1,4 +1,4 @@
-# R8 / ProGuard rules for KheIA (Expo React Native)
+# R8 / ProGuard rules for KHEYA (Expo React Native)
 # Copiază acest fișier în proiect sau folosește conținutul în expo-build-properties (extraProguardRules).
 # La primul build cu R8, rulează: npx expo install expo-build-properties
 

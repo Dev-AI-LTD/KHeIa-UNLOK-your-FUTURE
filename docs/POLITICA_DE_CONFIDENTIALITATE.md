@@ -16,7 +16,7 @@
 
 ## 1. Cine suntem
 
-**DEV AI LTD EOOD** („noi”, „furnizorul”) este operatorul de date cu caracter personal în legătură cu aplicația KHEYA – Unlock Your Future. Sediu: 1 Bogdan Voyvoda str./blvd., 7002 Ruse, Bulgaria. Contact: contact@kheya.ro, contact@devaieood.com | +40 725 177 971.
+**DEV AI LTD EOOD** („noi”, „furnizorul”) este operatorul de date cu caracter personal în legătură cu aplicația KHEYA – Unlock Your Future. Sediu: 1 Bogdan Voyvoda str./blvd., 7002 Ruse, Bulgaria. Contact: contact@kheya.ro, contact@devaieood.com.
 
 ---
 
@@ -99,7 +99,7 @@ Datele sunt **găzduite pe servere din UE/SEE**. În prezent **nu transferăm** 
 - **Retragerea consimțământului** – unde prelucrarea se bazează pe consimțământ, îl poți retrage oricând.
 - **Plângere la ANSPDCP** – poți depune o plângere la Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal (ANSPDCP), Bd. G-ral. Gheorghe Magheru 28-30, sector 1, București.
 
-Pentru exercitarea drepturilor: contact@kheya.ro, contact@devaieood.com sau +40 725 177 971.
+Pentru exercitarea drepturilor: contact@kheya.ro, contact@devaieood.com.
 
 ---
 
@@ -111,7 +111,7 @@ Aplicăm măsuri tehnice și organizatorice rezonabile: comunicare criptată (HT
 
 ## 11. Contact și protecția datelor
 
-Pentru întrebări legate de confidențialitate sau exercitarea drepturilor GDPR: **contact@kheya.ro**, **contact@devaieood.com** sau **+40 725 177 971**.
+Pentru întrebări legate de confidențialitate sau exercitarea drepturilor GDPR: **contact@kheya.ro**, **contact@devaieood.com**.
 
 [Opțional: mențiune despre responsabil cu protecția datelor (DPO), dacă este desemnat.]
 

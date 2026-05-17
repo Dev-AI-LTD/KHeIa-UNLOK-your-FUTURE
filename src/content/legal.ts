@@ -5,7 +5,7 @@
 
 export const GDPR_TEXT = `Drepturile tale conform Regulamentului (UE) 2016/679 (GDPR)
 
-Operator: DEV AI LTD EOOD. Contact: contact@kheya.ro, contact@devaieood.com | +40 725 177 971.
+Operator: DEV AI LTD EOOD. Contact: contact@kheya.ro, contact@devaieood.com.
 
 1. Dreptul de acces
 Ai dreptul să obții de la noi confirmarea că procesăm datele tale personale și, în caz afirmativ, acces la aceste date și la informații conexe, inclusiv scopul procesării, categoriile de date și destinatarii acestora.
@@ -35,12 +35,12 @@ Durata stocării
 Datele sunt păstrate atât timp cât este necesar pentru furnizarea serviciilor sau pentru îndeplinirea obligațiilor legale. După cererea de ștergere, eliminăm datele în termen de 30 zile.
 
 Contact
-Pentru exercitarea drepturilor sau pentru întrebări legate de protecția datelor: contact@kheya.ro, contact@devaieood.com | +40 725 177 971`;
+Pentru exercitarea drepturilor sau pentru întrebări legate de protecția datelor: contact@kheya.ro, contact@devaieood.com`;
 
 export const PRIVACY_POLICY_TEXT = `Politica de confidențialitate – KHEYA – Unlock Your Future
 
 Operator: DEV AI LTD EOOD. Sediu: 1 Bogdan Voyvoda str./blvd., 7002 Ruse, Bulgaria.
-Contact: contact@kheya.ro, contact@devaieood.com | +40 725 177 971.
+Contact: contact@kheya.ro, contact@devaieood.com.
 
 Ultima actualizare: 2025
 
@@ -76,11 +76,11 @@ Aplicația mobilă poate folosi tehnologii locale (ex. AsyncStorage) pentru stoc
 Putem actualiza această politică. Te vom informa despre modificări semnificative prin notificare în aplicație sau prin email.
 
 9. Contact
-Pentru întrebări legate de confidențialitate: contact@kheya.ro, contact@devaieood.com | +40 725 177 971`;
+Pentru întrebări legate de confidențialitate: contact@kheya.ro, contact@devaieood.com`;
 
 export const TERMS_TEXT = `Termeni și condiții de utilizare – KHEYA – Unlock Your Future
 
-Furnizor: DEV AI LTD EOOD. Contact: contact@kheya.ro, contact@devaieood.com | +40 725 177 971.
+Furnizor: DEV AI LTD EOOD. Contact: contact@kheya.ro, contact@devaieood.com.
 
 Ultima actualizare: 2025
 
@@ -115,4 +115,4 @@ Poți închide contul oricând din Setări/Profil. Ne rezervăm dreptul de a sus
 Acești termeni sunt guvernați de legislația română. Orice litigiu va fi soluționat de instanțele competente din România.
 
 10. Contact
-Pentru întrebări legate de termeni: contact@kheya.ro, contact@devaieood.com | +40 725 177 971`;
+Pentru întrebări legate de termeni: contact@kheya.ro, contact@devaieood.com`;

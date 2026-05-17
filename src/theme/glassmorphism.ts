@@ -38,9 +38,9 @@ const glassTokens = {
 
 export const glassStyles = StyleSheet.create({
   card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: spacing.relaxed,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: spacing.cardPadding,
   },
   tabBar: {
     borderRadius: 999,

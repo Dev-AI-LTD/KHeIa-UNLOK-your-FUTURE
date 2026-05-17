@@ -11,7 +11,6 @@
 - **CUI / EIK:** [CUI – completare]
 - **Adresă sediu:** 1 Bogdan Voyvoda str./blvd., 7002 Ruse, Bulgaria
 - **Email contact:** contact@kheya.ro, contact@devaieood.com
-- **Telefon:** +40 725 177 971
 
 ---
 
@@ -131,6 +130,6 @@ Prezentele termeni sunt guvernate de **legislația României**. Orice litigiu va
 
 ---
 
-**Contact:** contact@kheya.ro, contact@devaieood.com | +40 725 177 971
+**Contact:** contact@kheya.ro, contact@devaieood.com
 
 *Ultima actualizare: [DATA]*

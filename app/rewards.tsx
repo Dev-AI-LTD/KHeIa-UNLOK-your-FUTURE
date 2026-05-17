@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing, radius, sizes, iosText } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getRewardsCatalog, redeemReward, type Reward } from '@/services/gamification.service';
 import { supabase } from '@/services/supabase';
@@ -33,7 +33,7 @@ export default function RewardsScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.screenPadding }]}
       showsVerticalScrollIndicator={false}
     >
       <Pressable onPress={() => router.back()} style={styles.back}>
@@ -79,45 +79,52 @@ export default function RewardsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: spacing.lg,
     backgroundColor: 'transparent',
   },
   content: {
+    paddingHorizontal: spacing.screenPadding,
     paddingBottom: spacing.contentBottom,
   },
   back: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.fieldGap,
+    minHeight: sizes.touchTarget,
+    minWidth: sizes.touchTarget,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
   },
   backText: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     color: colors.dark.primary,
-    fontWeight: '600',
+    textAlign: 'left',
   },
   title: {
-    fontSize: typography.size.xl,
-    fontWeight: '700',
+    ...iosText('title2'),
     color: colors.dark.text,
+    textAlign: 'left',
   },
   subtitle: {
     marginTop: spacing.xs,
-    fontSize: typography.size.sm,
+    ...iosText('body'),
     color: colors.dark.muted,
+    textAlign: 'left',
   },
   loader: {
-    marginTop: spacing.xl,
+    marginTop: spacing.sectionGap,
   },
   placeholder: {
-    marginTop: spacing.xl,
-    fontSize: typography.size.md,
+    marginTop: spacing.sectionGap,
+    ...iosText('body'),
     color: colors.dark.muted,
     fontStyle: 'italic',
+    textAlign: 'left',
   },
   list: {
-    marginTop: spacing.lg,
-    gap: spacing.sm,
+    marginTop: spacing.sectionGap,
+    gap: spacing.fieldGap,
   },
   card: {
-    padding: spacing.md,
+    padding: spacing.cardPadding,
+    borderRadius: radius.lg,
   },
   cardRow: {
     flexDirection: 'row',
@@ -128,33 +135,40 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardName: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     fontWeight: '700',
     color: colors.dark.text,
+    textAlign: 'left',
   },
   cardDesc: {
     marginTop: spacing.xs,
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
+    textAlign: 'left',
   },
   cardCost: {
     marginTop: spacing.xs,
-    fontSize: typography.size.sm,
-    color: colors.dark.primary,
+    ...iosText('subhead'),
     fontWeight: '600',
+    color: colors.dark.primary,
+    textAlign: 'left',
   },
   redeemBtn: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
+    minHeight: sizes.touchTarget,
+    minWidth: sizes.touchTarget,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'rgba(59, 130, 246, 0.3)',
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   redeemBtnPressed: {
     opacity: 0.9,
   },
   redeemBtnText: {
-    fontSize: typography.size.sm,
-    fontWeight: '600',
+    ...iosText('headline'),
     color: '#60a5fa',
+    textAlign: 'left',
   },
 });

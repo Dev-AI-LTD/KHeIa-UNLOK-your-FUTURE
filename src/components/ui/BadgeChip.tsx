@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing } from '@/theme';
+import { Text, View } from 'react-native';
+import { gamificationStyles as styles } from '@/components/gamification/gamification.styles';
 
 type BadgeChipProps = {
   label: string;
@@ -7,21 +7,8 @@ type BadgeChipProps = {
 
 export const BadgeChip = ({ label }: BadgeChipProps) => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>{label}</Text>
+    <View style={styles.badgeChip}>
+      <Text style={styles.badgeChipText}>{label}</Text>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.light.surface,
-    borderRadius: 14,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-  },
-  text: {
-    color: colors.light.text,
-    fontWeight: '600',
-  },
-});

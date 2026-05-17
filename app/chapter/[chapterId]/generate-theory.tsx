@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing, typography, ios } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getGeneratedChapters, setGeneratedTheory } from '@/lib/chapterStorage';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
@@ -59,7 +59,7 @@ export default function GenerateTheoryScreen() {
 
   if (!chapter) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top + spacing.lg }]}>
+      <View style={[styles.container, styles.notFoundContent, { paddingTop: insets.top + spacing.screenPadding }]}>
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}
           style={styles.backRow}
@@ -75,7 +75,7 @@ export default function GenerateTheoryScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.screenPadding }]}
       showsVerticalScrollIndicator={false}
     >
       <Pressable
@@ -116,17 +116,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
+  notFoundContent: {
+    paddingHorizontal: spacing.screenPadding,
+  },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.screenPadding,
     paddingBottom: spacing.contentBottom,
   },
   backRow: {
-    marginBottom: spacing.sm,
+    marginBottom: spacing.fieldGap,
+    minHeight: ios.layout.minTarget,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
   },
   backText: {
-    fontSize: 28,
+    fontSize: typography.size.md,
     fontWeight: '600',
     color: 'rgba(255,255,255,0.9)',
+    textAlign: 'left',
   },
   screenTitle: {
     fontSize: typography.size.sm,
@@ -135,37 +142,44 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: spacing.xs,
+    textAlign: 'left',
   },
   chapterTitle: {
     fontSize: typography.size.xl,
     fontWeight: '700',
     color: '#ffffff',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sectionGap,
+    textAlign: 'left',
   },
   infoCard: {
-    padding: spacing.md,
-    marginBottom: spacing.lg,
+    padding: spacing.cardPadding,
+    marginBottom: spacing.sectionGap,
     backgroundColor: 'rgba(2, 6, 23, 0.7)',
     borderColor: 'rgba(148, 163, 184, 0.25)',
+    borderRadius: ios.radius.md,
   },
   infoText: {
     fontSize: typography.size.md,
     color: '#ffffff',
     lineHeight: 22,
+    textAlign: 'left',
   },
-  generateBtn: { marginBottom: spacing.md },
+  generateBtn: { marginBottom: spacing.fieldGap, minHeight: ios.layout.minTarget },
   generateBtnPressed: { opacity: 0.9 },
   generateBtnInner: {
-    padding: spacing.md,
+    padding: spacing.cardPadding,
+    minHeight: ios.layout.minTarget,
+    justifyContent: 'center',
     backgroundColor: 'rgba(59, 130, 246, 0.25)',
     borderColor: 'rgba(59, 130, 246, 0.5)',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: ios.radius.md,
   },
   generateBtnText: {
     fontSize: typography.size.md,
     fontWeight: '600',
     color: '#60a5fa',
+    textAlign: 'left',
   },
 });

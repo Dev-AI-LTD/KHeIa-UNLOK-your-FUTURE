@@ -1,0 +1,16 @@
+diff --git a/node_modules/@kinde/js-utils/dist/js-utils.js b/node_modules/@kinde/js-utils/dist/js-utils.js
+index 1c06965..9f50ad2 100644
+--- a/node_modules/@kinde/js-utils/dist/js-utils.js
++++ b/node_modules/@kinde/js-utils/dist/js-utils.js
+@@ -1360,10 +1360,7 @@ const We = async ({
+   return u;
+ }, St = () => !A(), Ct = {
+   __esModule: !0,
+-  default: async () => (await import(
+-    /* webpackIgnore: true */
+-    "./expoSecureStore-D7t_Z1p2.js"
+-  )).ExpoSecureStore
++  default: async () => null
+ };
+ export {
+   Qe as ChromeStore,

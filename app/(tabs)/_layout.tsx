@@ -1,13 +1,12 @@
 import { Tabs } from 'expo-router';
-import { useColorScheme, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabBarIcon } from '@/components/TabBarIcon';
-import { spacing } from '@/theme';
+import { spacing, ios } from '@/theme';
 
 export default function TabsLayout() {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
   const insets = useSafeAreaInsets();
+  const tabBarHeight = ios.layout.tabBarContentHeight + insets.bottom;
 
   return (
     <Tabs
@@ -22,9 +21,9 @@ export default function TabsLayout() {
             style={[
               StyleSheet.absoluteFill,
               {
-                backgroundColor: 'rgba(15, 23, 42, 0.5)',
-                borderRadius: 999,
-                borderWidth: 1,
+                backgroundColor: 'rgba(15, 23, 42, 0.72)',
+                borderRadius: ios.radius.lg,
+                borderWidth: StyleSheet.hairlineWidth,
                 borderColor: 'rgba(255, 255, 255, 0.12)',
               },
             ]}
@@ -34,49 +33,44 @@ export default function TabsLayout() {
           position: 'absolute',
           left: spacing.screenPadding,
           right: spacing.screenPadding,
-          bottom: insets.bottom + spacing.relaxed,
-          borderRadius: 999,
+          bottom: Math.max(insets.bottom, spacing.sm),
+          height: tabBarHeight,
+          borderRadius: ios.radius.lg,
           backgroundColor: 'transparent',
           borderWidth: 0,
-          borderColor: 'transparent',
-          shadowColor: 'transparent',
-          shadowOpacity: 0,
-          shadowRadius: 0,
-          elevation: 0,
-          paddingBottom: Math.max(insets.bottom, spacing.compact),
-          paddingTop: spacing.compact,
-          height: 64,
+          paddingTop: spacing.xs,
+          paddingBottom: insets.bottom,
         },
-        tabBarActiveTintColor: isDark ? '#F9FAFB' : '#111827',
+        tabBarActiveTintColor: '#F9FAFB',
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarItemStyle: {
-          borderRadius: 999,
-          marginHorizontal: spacing.tight,
+          minHeight: ios.layout.minTouchTarget,
+          borderRadius: ios.radius.md,
+          marginHorizontal: spacing.xs,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: ios.typography.caption1.fontSize,
+          lineHeight: ios.typography.caption1.lineHeight,
           fontWeight: '600',
+          marginBottom: Platform.OS === 'ios' ? 0 : 2,
         },
-        tabBarActiveBackgroundColor: 'rgba(255, 255, 255, 0.14)',
+        tabBarActiveBackgroundColor: 'rgba(255, 255, 255, 0.12)',
         tabBarIconStyle: {
-          marginBottom: -spacing.tight,
+          marginTop: spacing.xs,
         },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{ href: null }}
-      />
+      <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Acasa',
+          title: 'Acasă',
           tabBarAccessibilityLabel: 'Acasă',
           tabBarIcon: ({ color, focused, size }) => (
             <TabBarIcon
               focused={focused}
               color={color}
-              size={size}
+              size={size ?? ios.icon.md}
               activeName="book"
               inactiveName="book-outline"
             />
@@ -92,7 +86,7 @@ export default function TabsLayout() {
             <TabBarIcon
               focused={focused}
               color={color}
-              size={size}
+              size={size ?? ios.icon.md}
               activeName="chatbubble-ellipses"
               inactiveName="chatbubble-ellipses-outline"
             />
@@ -108,7 +102,7 @@ export default function TabsLayout() {
             <TabBarIcon
               focused={focused}
               color={color}
-              size={size}
+              size={size ?? ios.icon.md}
               activeName="clipboard"
               inactiveName="clipboard-outline"
             />
@@ -116,17 +110,17 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="progress"
+        name="chat"
         options={{
-          title: 'Progres',
-          tabBarAccessibilityLabel: 'Progres',
+          title: 'Chat',
+          tabBarAccessibilityLabel: 'Chat comunitate',
           tabBarIcon: ({ color, focused, size }) => (
             <TabBarIcon
               focused={focused}
               color={color}
-              size={size}
-              activeName="bar-chart"
-              inactiveName="bar-chart-outline"
+              size={size ?? ios.icon.md}
+              activeName="people"
+              inactiveName="people-outline"
             />
           ),
         }}
@@ -140,7 +134,7 @@ export default function TabsLayout() {
             <TabBarIcon
               focused={focused}
               color={color}
-              size={size}
+              size={size ?? ios.icon.md}
               activeName="person-circle"
               inactiveName="person-circle-outline"
             />

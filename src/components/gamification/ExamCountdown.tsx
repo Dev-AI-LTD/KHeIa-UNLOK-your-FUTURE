@@ -1,12 +1,12 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '@/theme';
+import { View, Text } from 'react-native';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { gamificationStyles as styles } from '@/components/gamification/gamification.styles';
 
 export type ExamType = 'EN' | 'BAC';
 
 const EXAM_DATES_2026: Record<ExamType, Date> = {
-  EN: new Date(2026, 5, 22), // 22 iunie 2026
-  BAC: new Date(2026, 5, 29), // 29 iunie 2026
+  EN: new Date(2026, 5, 22),
+  BAC: new Date(2026, 5, 29),
 };
 
 const EXAM_LABELS: Record<ExamType, string> = {
@@ -34,101 +34,38 @@ export function ExamCountdown({ examType, compact = false }: ExamCountdownProps)
 
   if (compact) {
     return (
-      <View style={styles.compact}>
-        <Text style={styles.compactLabel}>{label}</Text>
-        <Text style={styles.compactDays}>{days} zile</Text>
+      <View style={styles.countdownCompact}>
+        <Text style={styles.countdownCompactLabel}>{label}</Text>
+        <Text style={styles.countdownCompactDays}>{days} zile</Text>
       </View>
     );
   }
 
   return (
-    <GlassCard dark intensity={18} style={styles.card}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.days}>{days}</Text>
-      <Text style={styles.suffix}>{days === 1 ? 'zi rămasă' : 'zile rămase'}</Text>
+    <GlassCard dark intensity={18} style={styles.countdownCard}>
+      <Text style={styles.countdownLabel}>{label}</Text>
+      <Text style={styles.countdownNumber}>{days}</Text>
+      <Text style={styles.countdownSuffix}>{days === 1 ? 'zi rămasă' : 'zile rămase'}</Text>
     </GlassCard>
   );
 }
 
-/**
- * Dual countdown for both EN and BAC.
- */
 export function ExamCountdownDual() {
   const enDays = getDaysRemaining(EXAM_DATES_2026.EN);
   const bacDays = getDaysRemaining(EXAM_DATES_2026.BAC);
 
   return (
-    <View style={styles.dual}>
-      <GlassCard dark intensity={18} style={styles.dualCard}>
-        <Text style={styles.dualLabel}>Evaluare Națională</Text>
-        <Text style={styles.dualDays}>{enDays}</Text>
-        <Text style={styles.dualSuffix}>zile</Text>
+    <View style={styles.countdownDual}>
+      <GlassCard dark intensity={18} style={styles.countdownDualCard}>
+        <Text style={styles.countdownDualLabel}>Evaluare Națională</Text>
+        <Text style={styles.countdownDualNumber}>{enDays}</Text>
+        <Text style={styles.countdownDualSuffix}>zile</Text>
       </GlassCard>
-      <GlassCard dark intensity={18} style={styles.dualCard}>
-        <Text style={styles.dualLabel}>Bacalaureat</Text>
-        <Text style={styles.dualDays}>{bacDays}</Text>
-        <Text style={styles.dualSuffix}>zile</Text>
+      <GlassCard dark intensity={18} style={styles.countdownDualCard}>
+        <Text style={styles.countdownDualLabel}>Bacalaureat</Text>
+        <Text style={styles.countdownDualNumber}>{bacDays}</Text>
+        <Text style={styles.countdownDualSuffix}>zile</Text>
       </GlassCard>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    padding: spacing.lg,
-    alignItems: 'center',
-  },
-  label: {
-    fontSize: typography.size.sm,
-    color: colors.dark.muted,
-    marginBottom: spacing.xs,
-  },
-  days: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: colors.dark.primary,
-  },
-  suffix: {
-    fontSize: typography.size.sm,
-    color: colors.dark.muted,
-    marginTop: spacing.xs,
-  },
-  compact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  compactLabel: {
-    fontSize: typography.size.sm,
-    color: colors.dark.muted,
-  },
-  compactDays: {
-    fontSize: typography.size.md,
-    fontWeight: '700',
-    color: colors.dark.primary,
-  },
-  dual: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  dualCard: {
-    flex: 1,
-    padding: spacing.md,
-    alignItems: 'center',
-  },
-  dualLabel: {
-    fontSize: typography.size.xs ?? 12,
-    color: colors.dark.muted,
-    marginBottom: spacing.xs,
-  },
-  dualDays: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.dark.primary,
-  },
-  dualSuffix: {
-    fontSize: typography.size.xs ?? 12,
-    color: colors.dark.muted,
-    marginTop: spacing.xs,
-  },
-});

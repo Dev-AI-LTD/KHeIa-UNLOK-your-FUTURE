@@ -18,10 +18,7 @@
       },
       "env": {
         "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
-      },
-      "buildArtifactPaths": [
-        "android/app/build/outputs/mapping/release/mapping.txt"
-      ]
+      }
     },
     "production": {
       "android": {
@@ -29,14 +26,8 @@
       },
       "env": {
         "EAS_BUILD_NO_EXPO_GO_WARNING": "true",
-        "NODE_OPTIONS": "--max-old-space-size=4096",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://lbvltfvdrsdrmpuglboh.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_D3gPN0zcutckTcATj3VEqQ_eGfWxjSp",
-        "EXPO_PUBLIC_NODE_BACKEND_URL": "https://kheia-unlok-your-future-production.up.railway.app"
-      },
-      "buildArtifactPaths": [
-        "android/app/build/outputs/mapping/release/mapping.txt"
-      ]
+        "NODE_OPTIONS": "--max-old-space-size=4096"
+      }
     }
   }
 }

@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { colors, spacing } from '@/theme';
+import { colors, spacing, ios, iosText, radius } from '@/theme';
 
 type PillButtonProps = {
   label: string;
@@ -8,7 +8,11 @@ type PillButtonProps = {
 
 export const PillButton = ({ label, onPress }: PillButtonProps) => {
   return (
-    <Pressable style={styles.button} onPress={onPress}>
+    <Pressable
+      style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
       <Text style={styles.text}>{label}</Text>
     </Pressable>
   );
@@ -17,12 +21,16 @@ export const PillButton = ({ label, onPress }: PillButtonProps) => {
 const styles = StyleSheet.create({
   button: {
     backgroundColor: colors.light.surface,
-    borderRadius: 20,
+    borderRadius: radius.pill,
+    minHeight: ios.layout.minTouchTarget,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  pressed: { opacity: 0.75 },
   text: {
+    ...iosText('headline'),
     color: colors.light.text,
-    fontWeight: '600',
   },
 });

@@ -7,10 +7,14 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, typography } from '@/theme';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { colors, spacing, ios, iosText, radius, sizes } from '@/theme';
+import { IOSListRow } from '@/components/ui/IOSListRow';
+import { IOSButton } from '@/components/ui/IOSButton';
 import { useSkin } from '@/contexts/SkinContext';
 import { SKINS, type SkinName } from '@/theme/skins';
 import { useGamification } from '@/hooks/useGamification';
@@ -25,7 +29,19 @@ import { useKindeAuth } from '@kinde/expo';
 import { signOutSupabase, deleteAccount } from '@/services/auth.service';
 import { getKindeAuthOptions } from '@/lib/kindeConfig';
 import { getSchoolLeaderboard, type SchoolLeaderboard } from '@/services/gamification.service';
-import { getProfile } from '@/services/referral.service';
+import { ProfileEditor } from '@/components/profile/ProfileEditor';
+import {
+  profileDisplayName,
+  profileSubtitle,
+  getUserProfile,
+} from '@/services/profile.service';
+import { useSubscription } from '@/hooks/useSubscription';
+import {
+  isRevenueCatConfigured,
+  presentPaywall,
+  presentCustomerCenter,
+  type PaywallResult,
+} from '@/services/purchases.service';
 
 const PROFILE_TABS: TabItem[] = [
   { id: 'evolutie', label: 'Evoluție' },
@@ -61,6 +77,14 @@ export default function ProfileScreen() {
     recentChapters,
     loading: progressLoading,
   } = useProgress();
+  const {
+    isPremium,
+    planType,
+    isCancelled,
+    currentPeriodEnd,
+    refreshAfterPurchase,
+    refreshAfterCustomerCenter,
+  } = useSubscription();
 
   const [activeTab, setActiveTab] = useState('evolutie');
   const [legalTab, setLegalTab] = useState('confidentialitate');
@@ -68,11 +92,20 @@ export default function ProfileScreen() {
   const [userSchool, setUserSchool] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
 
-  useEffect(() => {
+  const refreshLeaderboard = useCallback(() => {
     if (!userId) return;
-    getSchoolLeaderboard(10).then(setLeaderboard);
-    getProfile(userId).then((p) => setUserSchool(p?.school ?? null));
+    void Promise.all([getSchoolLeaderboard(10), getUserProfile(userId)]).then(
+      ([data, profile]) => {
+        setLeaderboard(data);
+        const mine = data.flatMap((g) => g.entries).find((e) => e.user_id === userId);
+        setUserSchool(mine?.school ?? profile?.school ?? null);
+      },
+    );
   }, [userId]);
+
+  useEffect(() => {
+    refreshLeaderboard();
+  }, [refreshLeaderboard]);
 
   useFocusEffect(
     useCallback(() => {
@@ -185,17 +218,6 @@ export default function ProfileScreen() {
       );
     }
 
-    if (leaderboard.length === 0) {
-      return (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Clasament pe școala</Text>
-          <Text style={styles.emptySubtitle}>
-            Adaugă școala în profil pentru a apărea în clasament. Va urma.
-          </Text>
-        </View>
-      );
-    }
-
     const sortedLeaderboard = userSchool
       ? [...leaderboard].sort((a, b) => {
           if (a.school === userSchool) return -1;
@@ -206,28 +228,80 @@ export default function ProfileScreen() {
 
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Clasament pe școală</Text>
-        <Text style={styles.sectionDesc}>
-          Top XP după școală. Adaugă școala în profil pentru a apărea.
-        </Text>
-        {sortedLeaderboard.map(({ school, entries }) => (
-          <GlassCard key={school} dark intensity={18} style={styles.leaderboardCard}>
-            <Text style={styles.leaderboardSchool}>{school}</Text>
-            {entries.map((e) => (
-              <View
-                key={e.user_id}
-                style={[
-                  styles.leaderboardRow,
-                  e.user_id === userId && styles.leaderboardRowHighlight,
-                ]}
-              >
-                <Text style={styles.leaderboardRank}>#{e.rank}</Text>
-                <Text style={styles.leaderboardXP}>{e.total_xp} XP</Text>
-                <Text style={styles.leaderboardCoins}>🪙 {e.coins}</Text>
-              </View>
+        <ProfileEditor userId={userId} onSaved={refreshLeaderboard} />
+
+        {leaderboard.length === 0 ? (
+          <View style={styles.emptyStateInline}>
+            <Text style={styles.emptySubtitle}>
+              Completează școala și salvează profilul pentru a apărea în clasament alături de colegi.
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.sectionTitle}>Clasament pe școală</Text>
+            <Text style={styles.sectionDesc}>
+              Top XP în școala ta și din alte școli. Poziția ta e evidențiată.
+            </Text>
+            {sortedLeaderboard.map(({ school, entries }) => (
+              <GlassCard key={school} dark intensity={18} style={styles.leaderboardCard}>
+                <Text style={styles.leaderboardSchool}>{school}</Text>
+                {entries.map((e) => {
+                  const name = profileDisplayName(
+                    {
+                      id: e.user_id,
+                      display_name: e.display_name,
+                      school: e.school,
+                      city: e.city,
+                      study_year: e.study_year,
+                      avatar_url: e.avatar_url,
+                    },
+                    e.user_id,
+                  );
+                  const meta = profileSubtitle({
+                    id: e.user_id,
+                    display_name: e.display_name,
+                    school: e.school,
+                    city: e.city,
+                    study_year: e.study_year,
+                    avatar_url: e.avatar_url,
+                  });
+                  const initial = name[0]?.toUpperCase() ?? 'E';
+
+                  return (
+                    <View
+                      key={e.user_id}
+                      style={[
+                        styles.leaderboardRow,
+                        e.user_id === userId && styles.leaderboardRowHighlight,
+                      ]}
+                    >
+                      <Text style={styles.leaderboardRank}>#{e.rank}</Text>
+                      {e.avatar_url ? (
+                        <Image source={{ uri: e.avatar_url }} style={styles.leaderboardAvatar} />
+                      ) : (
+                        <View style={styles.leaderboardAvatarPlaceholder}>
+                          <Text style={styles.leaderboardAvatarText}>{initial}</Text>
+                        </View>
+                      )}
+                      <View style={styles.leaderboardInfo}>
+                        <Text style={styles.leaderboardName} numberOfLines={1}>
+                          {name}
+                          {e.user_id === userId ? ' (tu)' : ''}
+                        </Text>
+                        {meta ? (
+                          <Text style={styles.leaderboardMeta} numberOfLines={1}>
+                            {meta}
+                          </Text>
+                        ) : null}
+                        <Text style={styles.leaderboardXPInline}>{e.total_xp} XP • 🪙 {e.coins}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </GlassCard>
             ))}
-          </GlassCard>
-        ))}
+          </>
+        )}
       </View>
     );
   };
@@ -323,6 +397,93 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleSignOut = () => {
+    Alert.alert('Deconectare', 'Sigur vrei să te deconectezi din cont?', [
+      { text: 'Anulare', style: 'cancel' },
+      {
+        text: 'Deconectare',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOutSupabase();
+            await kinde.logout({ revokeToken: true, ...getKindeAuthOptions() });
+          } catch {
+            // navigăm la login chiar dacă logout Kinde eșuează parțial
+          }
+          router.replace('/login');
+        },
+      },
+    ]);
+  };
+
+  const handlePaywallResult = async (result: PaywallResult) => {
+    if (result === 'PURCHASED' || result === 'RESTORED') {
+      await refreshAfterPurchase();
+    }
+  };
+
+  const handleOpenPremium = async () => {
+    if (!userId) {
+      router.replace('/login');
+      return;
+    }
+    if (!isRevenueCatConfigured()) {
+      Alert.alert(
+        'Indisponibil',
+        'Adaugă EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE în .env și reconstruiește app-ul (npm run android).',
+      );
+      return;
+    }
+    const result = await presentPaywall();
+    await handlePaywallResult(result);
+  };
+
+  const formatSubscriptionEndDate = (iso: string | null) => {
+    if (!iso) return null;
+    try {
+      return new Date(iso).toLocaleDateString('ro-RO', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    if (!userId) {
+      router.replace('/login');
+      return;
+    }
+    if (!isRevenueCatConfigured()) {
+      Alert.alert('Indisponibil', 'RevenueCat nu este configurat pe acest build.');
+      return;
+    }
+    const ccResult = await presentCustomerCenter();
+    const status = await refreshAfterCustomerCenter();
+
+    if (ccResult.action === 'RESTORED') {
+      Alert.alert('Abonament restaurat', 'KHEYA Pro a fost restaurat cu succes.');
+      return;
+    }
+
+    if (ccResult.action === 'CANCELLED' || status.isCancelled) {
+      const endLabel = formatSubscriptionEndDate(status.currentPeriodEnd);
+      Alert.alert(
+        'Abonament anulat',
+        endLabel
+          ? `KHEYA Pro rămâne activ până la ${endLabel}. După această dată vei reveni automat la planul gratuit.`
+          : 'Abonamentul a fost anulat. Vei reveni la planul gratuit la sfârșitul perioadei plătite.',
+      );
+      return;
+    }
+
+    if (!status.isPremium) {
+      Alert.alert('Plan gratuit', 'Nu ai un abonament activ. Poți activa KHEYA Pro din secțiunea de mai sus.');
+    }
+  };
+
   const handleDeleteAccount = () => {
     if (!userId) return;
     Alert.alert(
@@ -363,18 +524,65 @@ export default function ProfileScreen() {
 
   const renderSetariTab = () => (
     <View style={styles.skinSection}>
+      <Text style={styles.settingsSectionTitle}>Cont</Text>
       {userId ? (
-        <Pressable
-          onPress={handleDeleteAccount}
-          style={({ pressed }) => [styles.deleteAccountBtn, pressed && styles.authBtnPressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Șterge cont și toate datele"
-        >
-          <Text style={styles.deleteAccountText}>Șterge cont (GDPR)</Text>
-        </Pressable>
+        <GlassCard dark intensity={14} style={styles.accountCard}>
+          <IOSListRow
+            title="Deconectare"
+            subtitle="Ieși din cont pe acest dispozitiv"
+            icon="log-out-outline"
+            iconColor="#60a5fa"
+            onPress={handleSignOut}
+          />
+          <View style={styles.accountDivider} />
+          <IOSListRow
+            title="Șterge cont"
+            subtitle="Ștergere definitivă (GDPR)"
+            icon="trash-outline"
+            destructive
+            onPress={handleDeleteAccount}
+          />
+        </GlassCard>
+      ) : (
+        <GlassCard dark intensity={14} style={styles.accountCardGuest}>
+          <Text style={styles.accountGuestText}>Autentifică-te pentru a gestiona contul.</Text>
+          <IOSButton label="Autentificare" onPress={() => router.replace('/login')} variant="primary" />
+        </GlassCard>
+      )}
+
+      <Text style={[styles.settingsSectionTitle, { marginTop: spacing.sectionGap }]}>Abonament</Text>
+      {userId ? (
+        <GlassCard dark intensity={14} style={styles.accountCard}>
+          <Text style={styles.premiumStatusText}>
+            {isPremium
+              ? isCancelled
+                ? `KHEYA Pro — anulat${currentPeriodEnd ? `, activ până la ${formatSubscriptionEndDate(currentPeriodEnd)}` : ''}`
+                : `KHEYA Pro activ${planType !== 'free' ? ` (${planType})` : ''}`
+              : 'Plan gratuit — deblochează acces complet'}
+          </Text>
+          {isPremium && isCancelled ? (
+            <Text style={styles.premiumCancelledHint}>
+              Abonamentul nu se reînnoiește. Beneficiile Pro rămân până la data de expirare.
+            </Text>
+          ) : null}
+          {!isPremium ? (
+            <IOSButton
+              label="Deblochează KHEYA Pro"
+              onPress={() => void handleOpenPremium()}
+              variant="primary"
+              style={styles.premiumCta}
+            />
+          ) : null}
+          <IOSButton
+            label="Restaurare / Gestionează abonamentul"
+            onPress={() => void handleManageSubscription()}
+            variant="secondary"
+            style={styles.premiumCta}
+          />
+        </GlassCard>
       ) : null}
 
-      <Text style={[styles.skinTitle, userId ? { marginTop: spacing.xl } : undefined]}>Temă / Skin</Text>
+      <Text style={[styles.skinTitle, { marginTop: spacing.sectionGap }]}>Temă / Skin</Text>
       <Text style={styles.skinSubtitle}>Alege fundalul aplicației</Text>
       <View style={styles.skinOptions}>
         {Object.values(SKINS).map((s) => {
@@ -429,7 +637,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.headerArea, { paddingTop: insets.top + spacing.md }]}>
+      <View style={[styles.headerArea, { paddingTop: insets.top + spacing.sm }]}>
         <Text style={styles.title}>Profil</Text>
         <Text style={styles.subtitle}>Evoluție, statistici și setări.</Text>
       </View>
@@ -460,23 +668,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   headerArea: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.screenPadding,
+    marginBottom: spacing.fieldGap,
   },
   title: {
-    fontSize: typography.size.xl,
-    fontWeight: '700',
+    ...iosText('largeTitle'),
     color: colors.dark.text,
+    textAlign: 'left',
   },
   subtitle: {
-    marginTop: spacing.sm,
-    fontSize: typography.size.md,
+    marginTop: spacing.xs,
+    ...iosText('subhead'),
     color: colors.dark.muted,
+    textAlign: 'left',
   },
   scroll: {
     flex: 1,
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.screenPadding,
+    paddingTop: spacing.sectionGap,
     paddingBottom: spacing.contentBottom,
   },
   centered: {
@@ -489,27 +700,26 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.fieldGap,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: sizes.touchTarget + spacing.xs,
+    height: sizes.touchTarget + spacing.xs,
+    borderRadius: radius.pill,
     backgroundColor: colors.dark.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: typography.size.xl,
-    fontWeight: '700',
+    ...iosText('title2'),
     color: '#fff',
   },
   headerRight: {
     flex: 1,
-    marginLeft: spacing.md,
+    marginLeft: spacing.fieldGap,
   },
   level: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     fontWeight: '600',
     color: colors.dark.text,
     marginBottom: spacing.xs,
@@ -530,18 +740,17 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(34, 197, 94, 0.3)',
   },
   referralTitle: {
-    fontSize: typography.size.md,
-    fontWeight: '700',
+    ...iosText('headline'),
     color: colors.dark.text,
   },
   referralSubtitle: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
-    marginTop: spacing.tight,
+    marginTop: spacing.xs,
   },
   referralCta: {
     marginTop: spacing.sm,
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     fontWeight: '600',
     color: '#22C55E',
   },
@@ -555,56 +764,96 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   cardTitle: {
-    fontSize: typography.size.md,
-    fontWeight: '700',
+    ...iosText('headline'),
     color: colors.dark.text,
-    marginBottom: spacing.md,
+    marginBottom: spacing.fieldGap,
   },
   progressRow: {
     marginTop: spacing.xs,
   },
   progressLabel: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
     marginBottom: spacing.xs,
   },
   chartBarBg: {
     flex: 1,
-    height: 10,
+    height: spacing.sm + spacing.xs,
     backgroundColor: 'rgba(15, 23, 42, 0.8)',
-    borderRadius: 5,
+    borderRadius: radius.sm,
     overflow: 'hidden',
   },
   chartBarFill: {
     height: '100%',
     backgroundColor: colors.dark.primary,
-    borderRadius: 5,
+    borderRadius: radius.sm,
   },
   section: {
-    marginTop: spacing.xl,
+    marginTop: spacing.sectionGap,
   },
   sectionDesc: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
     marginTop: spacing.xs,
-    marginBottom: spacing.md,
+    marginBottom: spacing.fieldGap,
   },
   leaderboardCard: {
     marginTop: spacing.md,
     padding: spacing.md,
   },
   leaderboardSchool: {
-    fontSize: typography.size.md,
-    fontWeight: '700',
+    ...iosText('headline'),
     color: colors.dark.text,
     marginBottom: spacing.sm,
+  },
+  emptyStateInline: {
+    paddingVertical: spacing.md,
   },
   leaderboardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(148, 163, 184, 0.15)',
+  },
+  leaderboardAvatar: {
+    width: sizes.touchTarget - spacing.xs,
+    height: sizes.touchTarget - spacing.xs,
+    borderRadius: radius.pill,
+  },
+  leaderboardAvatarPlaceholder: {
+    width: sizes.touchTarget - spacing.xs,
+    height: sizes.touchTarget - spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  leaderboardAvatarText: {
+    ...iosText('body'),
+    fontWeight: '700',
+    color: colors.dark.primary,
+  },
+  leaderboardInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  leaderboardName: {
+    ...iosText('subhead'),
+    fontWeight: '700',
+    color: colors.dark.text,
+  },
+  leaderboardMeta: {
+    ...iosText('footnote'),
+    color: colors.dark.muted,
+    marginTop: spacing.xs / 2,
+  },
+  leaderboardXPInline: {
+    ...iosText('footnote'),
+    color: colors.dark.muted,
+    marginTop: spacing.xs,
+    fontWeight: '600',
   },
   leaderboardRowHighlight: {
     backgroundColor: 'rgba(59, 130, 246, 0.15)',
@@ -612,27 +861,16 @@ const styles = StyleSheet.create({
     marginVertical: -spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   leaderboardRank: {
-    width: 36,
-    fontSize: typography.size.sm,
-    fontWeight: '600',
-    color: colors.dark.muted,
-  },
-  leaderboardXP: {
-    flex: 1,
-    fontSize: typography.size.sm,
-    fontWeight: '600',
-    color: colors.dark.text,
-  },
-  leaderboardCoins: {
-    fontSize: typography.size.sm,
+    width: sizes.iconLg + spacing.sm,
+    ...iosText('subhead'),
+    fontWeight: '700',
     color: colors.dark.muted,
   },
   sectionTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: '700',
+    ...iosText('title3'),
     color: colors.dark.text,
     marginBottom: spacing.sm,
   },
@@ -640,10 +878,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: ios.layout.minTouchTarget,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     backgroundColor: 'rgba(15, 23, 42, 0.5)',
-    borderRadius: 12,
+    borderRadius: radius.md,
     marginBottom: spacing.sm,
   },
   chapterRowPressed: {
@@ -653,33 +892,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chapterTitle: {
-    fontSize: typography.size.md,
+    ...iosText('body'),
     fontWeight: '600',
     color: colors.dark.text,
   },
   chapterMeta: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
-    marginTop: spacing.tight,
+    marginTop: spacing.xs,
   },
   chapterScore: {
-    fontSize: typography.size.md,
+    ...iosText('body'),
     fontWeight: '700',
     color: colors.dark.primary,
   },
   emptyState: {
-    padding: spacing.xl,
+    padding: spacing.sectionGap,
     alignItems: 'center',
   },
   emptyTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: '600',
+    ...iosText('title3'),
     color: colors.dark.text,
     textAlign: 'center',
   },
   emptySubtitle: {
     marginTop: spacing.sm,
-    fontSize: typography.size.md,
+    ...iosText('body'),
     color: colors.dark.muted,
     textAlign: 'center',
   },
@@ -687,7 +925,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   subjectLabel: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
     marginBottom: spacing.xs,
   },
@@ -697,17 +935,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   subjectValue: {
-    width: 40,
-    fontSize: typography.size.sm,
+    width: sizes.touchTarget - spacing.xs,
+    ...iosText('subhead'),
     fontWeight: '700',
     color: colors.dark.text,
     textAlign: 'right',
   },
   remainingCount: {
-    fontSize: typography.size.lg,
-    fontWeight: '700',
+    ...iosText('title3'),
     color: colors.dark.text,
-    marginBottom: spacing.md,
+    marginBottom: spacing.fieldGap,
   },
   breakdownSection: {
     marginTop: spacing.sm,
@@ -720,17 +957,17 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(148, 163, 184, 0.2)',
   },
   breakdownLabel: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.text,
   },
   breakdownValue: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
   },
   planSubtitle: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
-    marginBottom: spacing.md,
+    marginBottom: spacing.fieldGap,
   },
   planCard: {
     marginBottom: spacing.sm,
@@ -740,50 +977,69 @@ const styles = StyleSheet.create({
   },
   planArrow: {
     marginTop: spacing.sm,
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     fontWeight: '600',
     color: colors.dark.primary,
   },
   skinSection: {
     marginTop: spacing.sm,
   },
-  authBtn: {
-    marginTop: spacing.sm,
+  settingsSectionTitle: {
+    ...iosText('title3'),
+    color: colors.dark.text,
+    marginBottom: spacing.fieldGap,
+    textAlign: 'left',
+  },
+  premiumStatusText: {
+    ...iosText('subhead'),
+    color: colors.dark.muted,
+    padding: spacing.cardPadding,
+    paddingBottom: spacing.sm,
+  },
+  premiumCancelledHint: {
+    ...iosText('footnote'),
+    color: colors.dark.muted,
+    paddingHorizontal: spacing.cardPadding,
+    paddingBottom: spacing.sm,
+    opacity: 0.9,
+  },
+  premiumCta: {
+    marginHorizontal: spacing.cardPadding,
     marginBottom: spacing.sm,
   },
-  authBtnPressed: { opacity: 0.9 },
-  authBtnInner: {
-    padding: spacing.lg,
-    alignItems: 'center',
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-    borderColor: 'rgba(59, 130, 246, 0.4)',
+  accountCard: {
+    padding: 0,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(2, 6, 23, 0.55)',
+    borderColor: 'rgba(148, 163, 184, 0.25)',
   },
-  authBtnText: {
-    fontSize: typography.size.md,
-    fontWeight: '700',
-    color: '#60a5fa',
+  accountCardGuest: {
+    padding: spacing.cardPadding,
+    gap: spacing.fieldGap,
+    backgroundColor: 'rgba(2, 6, 23, 0.55)',
+    borderColor: 'rgba(148, 163, 184, 0.25)',
   },
-  deleteAccountBtn: {
-    marginTop: spacing.sm,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
+  accountDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(148, 163, 184, 0.25)',
+    marginHorizontal: spacing.cardPadding,
   },
-  deleteAccountText: {
-    fontSize: typography.size.sm,
-    fontWeight: '600',
+  accountGuestText: {
+    ...iosText('subhead'),
     color: colors.dark.muted,
-    textDecorationLine: 'underline',
+    textAlign: 'left',
   },
   skinTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: '600',
+    ...iosText('title3'),
     color: colors.dark.text,
+    textAlign: 'left',
   },
   skinSubtitle: {
     marginTop: spacing.xs,
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
-    marginBottom: spacing.md,
+    marginBottom: spacing.fieldGap,
+    textAlign: 'left',
   },
   skinOptions: {
     gap: spacing.sm,
@@ -791,8 +1047,9 @@ const styles = StyleSheet.create({
   skinOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: 12,
+    minHeight: ios.layout.minTouchTarget,
+    padding: spacing.cardPadding,
+    borderRadius: radius.md,
     borderWidth: 2,
     borderColor: 'transparent',
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
@@ -802,14 +1059,14 @@ const styles = StyleSheet.create({
     borderColor: colors.dark.primary,
   },
   skinSwatch: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: sizes.iconLg + spacing.xs,
+    height: sizes.iconLg + spacing.xs,
+    borderRadius: radius.pill,
     marginRight: spacing.md,
   },
   skinLabel: {
     flex: 1,
-    fontSize: typography.size.md,
+    ...iosText('body'),
     fontWeight: '600',
     color: colors.dark.text,
   },
@@ -819,11 +1076,11 @@ const styles = StyleSheet.create({
     right: spacing.sm,
     backgroundColor: colors.dark.primary,
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.tight,
-    borderRadius: 6,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
   },
   skinBadgeText: {
-    fontSize: 10,
+    ...iosText('caption2'),
     fontWeight: '700',
     color: '#fff',
   },
@@ -831,12 +1088,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   legalContent: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
+    padding: spacing.fieldGap,
+    paddingBottom: spacing.sectionGap,
   },
   legalText: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.text,
-    lineHeight: 22,
   },
 });

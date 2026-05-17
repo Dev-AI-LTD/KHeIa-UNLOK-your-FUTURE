@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing, radius, sizes, iosText } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getGeneratedChapters } from '@/lib/chapterStorage';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
@@ -35,7 +35,7 @@ export default function SubjectDetailScreen() {
 
   if (!subject) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top + spacing.lg }]}>
+      <View style={[styles.container, { paddingTop: insets.top + spacing.screenPadding, paddingHorizontal: spacing.screenPadding }]}>
         <Pressable onPress={() => router.back()} style={styles.backRow}>
           <Text style={styles.backText}>← Înapoi</Text>
         </Pressable>
@@ -47,7 +47,7 @@ export default function SubjectDetailScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.screenPadding }]}
       showsVerticalScrollIndicator={false}
     >
       <Pressable
@@ -118,57 +118,72 @@ const styles = StyleSheet.create({
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: spacing.screenPadding,
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.screenPadding,
     paddingBottom: spacing.contentBottom,
   },
   backRow: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.fieldGap,
+    minHeight: sizes.touchTarget,
+    minWidth: sizes.touchTarget,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
   },
   backText: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     color: colors.dark.secondary,
-    fontWeight: '600',
+    textAlign: 'left',
   },
   subjectName: {
-    fontSize: typography.size.xl,
-    fontWeight: '700',
+    ...iosText('title2'),
     color: colors.dark.text,
     marginBottom: spacing.xs,
+    textAlign: 'left',
   },
   subjectMeta: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sectionGap,
+    textAlign: 'left',
   },
   sectionTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: '600',
+    ...iosText('title3'),
     color: colors.dark.text,
     marginBottom: spacing.xs,
+    textAlign: 'left',
   },
   programNote: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.fieldGap,
     fontStyle: 'italic',
+    textAlign: 'left',
   },
-  generateBtn: { marginBottom: spacing.md },
+  generateBtn: { marginBottom: spacing.fieldGap, minHeight: sizes.touchTarget },
   generateBtnPressed: { opacity: 0.9 },
   generateBtnInner: {
-    padding: spacing.md,
+    padding: spacing.cardPadding,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
     backgroundColor: 'rgba(34, 197, 94, 0.2)',
     borderColor: 'rgba(34, 197, 94, 0.5)',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
-  generateBtnText: { fontSize: typography.size.md, fontWeight: '600', color: '#4ade80' },
+  generateBtnText: {
+    ...iosText('headline'),
+    color: '#4ade80',
+    textAlign: 'left',
+  },
   chapterList: {
-    gap: spacing.sm,
+    gap: spacing.fieldGap,
   },
-  chapterPressable: {},
+  chapterPressable: {
+    minHeight: sizes.touchTarget,
+  },
   chapterPressed: {
     opacity: 0.85,
   },
@@ -177,46 +192,47 @@ const styles = StyleSheet.create({
   },
   lockedBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
     backgroundColor: 'rgba(148, 163, 184, 0.25)',
   },
   lockedBadgeText: {
-    fontSize: typography.size.sm,
-    color: colors.dark.muted,
+    ...iosText('subhead'),
     fontWeight: '600',
+    color: colors.dark.muted,
   },
   chapterCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(2, 6, 23, 0.5)',
     borderColor: 'rgba(148, 163, 184, 0.2)',
-    padding: spacing.md,
-    borderRadius: 14,
+    padding: spacing.cardPadding,
+    minHeight: sizes.touchTarget,
+    borderRadius: radius.md,
     borderWidth: 1,
   },
   chapterNumberBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: spacing.xl + spacing.sm,
+    height: spacing.xl + spacing.sm,
+    borderRadius: radius.pill,
     backgroundColor: 'rgba(148, 163, 184, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
   },
   chapterNumber: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     fontWeight: '700',
     color: colors.dark.text,
   },
   chapterTitle: {
     flex: 1,
-    fontSize: typography.size.md,
-    fontWeight: '600',
+    ...iosText('headline'),
     color: colors.dark.text,
+    textAlign: 'left',
   },
   chapterArrow: {
-    fontSize: typography.size.lg,
+    ...iosText('title3'),
     color: colors.dark.muted,
     marginLeft: spacing.sm,
   },
@@ -225,9 +241,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   emptyText: {
-    fontSize: typography.size.md,
+    ...iosText('body'),
     color: colors.dark.muted,
-    textAlign: 'center',
-    lineHeight: 22,
+    textAlign: 'left',
+  },
+  title: {
+    ...iosText('title2'),
+    color: colors.dark.text,
   },
 });

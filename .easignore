@@ -8,3 +8,6 @@
 coverage
 .nyc_output
 node-backend
+# Regenerate native projects on EAS (avoids stale autolinking / "No variants exist")
+/android
+/ios

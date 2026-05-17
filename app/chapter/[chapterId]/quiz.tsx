@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing, radius, sizes, iosText } from '@/theme';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { supabase } from '@/services/supabase';
@@ -123,7 +123,7 @@ export default function ChapterQuizScreen() {
 
   if (!chapterId || questions.length === 0) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top + spacing.lg }]}>
+      <View style={[styles.container, styles.emptyContent, { paddingTop: insets.top + spacing.screenPadding }]}>
         <Text style={styles.title}>Quiz</Text>
         <Text style={styles.subtitle}>
           Nu există întrebări pentru acest capitol. Generează mai întâi conținutul.
@@ -135,7 +135,7 @@ export default function ChapterQuizScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.screenPadding }]}
       showsVerticalScrollIndicator={false}
     >
       <Pressable onPress={() => router.back()} style={styles.back} hitSlop={16}>
@@ -194,37 +194,48 @@ const styles = StyleSheet.create({
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: spacing.screenPadding,
+  },
+  emptyContent: {
+    paddingHorizontal: spacing.screenPadding,
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.screenPadding,
     paddingBottom: spacing.contentBottom,
   },
   back: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.fieldGap,
+    minHeight: sizes.touchTarget,
+    minWidth: sizes.touchTarget,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
   },
   backText: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     color: colors.dark.secondary,
-    fontWeight: '600',
+    textAlign: 'left',
   },
   progress: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.fieldGap,
+    textAlign: 'left',
   },
   title: {
-    fontSize: typography.size.lg,
-    fontWeight: '700',
+    ...iosText('title3'),
     color: colors.dark.text,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.sectionGap,
+    textAlign: 'left',
   },
   options: {
-    gap: spacing.sm,
+    gap: spacing.fieldGap,
   },
   option: {
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    borderRadius: 12,
-    padding: spacing.md,
+    borderRadius: radius.md,
+    padding: spacing.cardPadding,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'rgba(148, 163, 184, 0.2)',
   },
@@ -243,42 +254,50 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(148, 163, 184, 0.15)',
   },
   optionText: {
-    fontSize: typography.size.md,
+    ...iosText('body'),
     color: colors.dark.text,
+    textAlign: 'left',
   },
   correctAnswerBox: {
-    marginTop: spacing.xl,
-    padding: spacing.md,
+    marginTop: spacing.sectionGap,
+    padding: spacing.cardPadding,
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    borderRadius: 12,
-    borderLeftWidth: 4,
+    borderRadius: radius.md,
+    borderLeftWidth: spacing.xs,
     borderLeftColor: colors.dark.success,
   },
   correctLabel: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     fontWeight: '600',
     color: colors.dark.muted,
     marginBottom: spacing.xs,
+    textAlign: 'left',
   },
   correctText: {
-    fontSize: typography.size.md,
+    ...iosText('body'),
     color: colors.dark.text,
+    textAlign: 'left',
   },
   nextButton: {
-    marginTop: spacing.xl,
+    marginTop: spacing.sectionGap,
+    minHeight: sizes.touchTarget,
   },
   nextPressed: {
     opacity: 0.9,
   },
   nextInner: {
-    padding: spacing.md,
+    padding: spacing.cardPadding,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
     backgroundColor: 'rgba(34, 197, 94, 0.25)',
     borderColor: 'rgba(34, 197, 94, 0.5)',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    borderRadius: radius.md,
   },
   nextText: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     fontWeight: '700',
     color: '#4ade80',
+    textAlign: 'left',
   },
 });

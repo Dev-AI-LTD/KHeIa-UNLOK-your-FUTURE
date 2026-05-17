@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, typography } from '@/theme';
+import { Text, View, Pressable } from 'react-native';
 import type { Reward } from '@/services/gamification.service';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { gamificationStyles as styles } from '@/components/gamification/gamification.styles';
 
 type RewardsPreviewProps = {
   rewards: Reward[];
@@ -9,72 +10,37 @@ type RewardsPreviewProps = {
 
 export const RewardsPreview = ({ rewards, onViewAll }: RewardsPreviewProps) => {
   const topRewards = rewards.slice(0, 2);
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Premii disponibile</Text>
-        <Text style={styles.link} onPress={onViewAll}>
-          Schimbă premii →
-        </Text>
+    <View style={styles.sectionContainer}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Premii disponibile</Text>
+        <Pressable
+          onPress={onViewAll}
+          style={({ pressed }) => [styles.sectionLink, pressed && { opacity: 0.7 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Schimbă premii"
+        >
+          <Text style={styles.sectionLinkText}>Schimbă premii →</Text>
+        </Pressable>
       </View>
+
       {topRewards.length === 0 ? (
-        <Text style={styles.empty}>Nicio premiu disponibil momentan</Text>
+        <Text style={styles.emptyText}>Nicio premiu disponibil momentan</Text>
       ) : (
         <View style={styles.list}>
           {topRewards.map((r) => (
-            <View key={r.id} style={styles.card}>
-              <Text style={styles.name}>{r.name}</Text>
-              <Text style={styles.cost}>{r.coins_cost} monede</Text>
-            </View>
+            <GlassCard key={r.id} dark intensity={14}>
+              <View style={styles.rewardCardRow}>
+                <Text style={styles.rewardName} numberOfLines={2}>
+                  {r.name}
+                </Text>
+                <Text style={styles.rewardCost}>{r.coins_cost} monede</Text>
+              </View>
+            </GlassCard>
           ))}
         </View>
       )}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    marginTop: spacing.lg,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  title: {
-    fontSize: typography.size.lg,
-    fontWeight: '700',
-    color: colors.dark.text,
-  },
-  link: {
-    fontSize: typography.size.sm,
-    color: colors.dark.primary,
-    fontWeight: '600',
-  },
-  list: {
-    gap: spacing.sm,
-  },
-  card: {
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    borderRadius: 12,
-    padding: spacing.md,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  name: {
-    fontSize: typography.size.md,
-    fontWeight: '600',
-    color: colors.dark.text,
-  },
-  cost: {
-    fontSize: typography.size.sm,
-    color: colors.dark.muted,
-  },
-  empty: {
-    fontSize: typography.size.sm,
-    color: colors.dark.muted,
-  },
-});

@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
 
     const { event } = body;
     const userId = event.app_user_id;
-    const entitlementId = Deno.env.get('REVENUECAT_ENTITLEMENT_ID') ?? 'pro'; // Configurable entitlement ID
+    const entitlementId = Deno.env.get('REVENUECAT_ENTITLEMENT_ID') ?? 'KheIA Pro';
 
     if (!userId) {
       return new Response('No user ID', { status: 400 });

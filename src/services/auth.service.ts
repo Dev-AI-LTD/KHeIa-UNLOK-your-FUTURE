@@ -79,6 +79,25 @@ export async function signOutSupabase(): Promise<void> {
 }
 
 /**
+ * Restores Supabase session from a persisted Kinde access token (offline scope + AsyncStorage).
+ * Avoids forcing email/code login when only the Supabase JWT expired.
+ */
+export async function restoreSupabaseFromKinde(
+  getKindeAccessToken: () => Promise<string | null>,
+): Promise<boolean> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session) return true;
+
+  const kindeToken = await getKindeAccessToken();
+  if (!kindeToken) return false;
+
+  const { error } = await bridgeKindeToSupabase(kindeToken);
+  return !error;
+}
+
+/**
  * GDPR: delete account via edge function (Supabase JWT after Kinde bridge).
  */
 export async function deleteAccount(): Promise<{ error: Error | null }> {

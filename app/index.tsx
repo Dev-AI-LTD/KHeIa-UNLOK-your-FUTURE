@@ -1,29 +1,65 @@
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Redirect } from 'expo-router';
+import { useKindeAuth } from '@kinde/expo';
 import { supabase } from '@/services/supabase';
+import { restoreSupabaseFromKinde } from '@/services/auth.service';
 
 export default function Index() {
+  const kinde = useKindeAuth();
   const [ready, setReady] = useState(false);
   const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setHasSession(!!session);
-      setReady(true);
-    });
+    let cancelled = false;
+
+    const resolveSession = async () => {
+      if (kinde.isLoading) return;
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        if (!cancelled) {
+          setHasSession(true);
+          setReady(true);
+        }
+        return;
+      }
+
+      if (kinde.isAuthenticated) {
+        const restored = await restoreSupabaseFromKinde(kinde.getAccessToken);
+        if (!cancelled) {
+          setHasSession(restored);
+          setReady(true);
+        }
+        return;
+      }
+
+      if (!cancelled) {
+        setHasSession(false);
+        setReady(true);
+      }
+    };
+
+    resolveSession();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setHasSession(!!session);
-      setReady(true);
+      if (!cancelled) {
+        setHasSession(!!session);
+        setReady(true);
+      }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [kinde.isLoading, kinde.isAuthenticated, kinde.getAccessToken]);
 
-  if (!ready) {
+  if (!ready || kinde.isLoading) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="small" color="#60a5fa" />

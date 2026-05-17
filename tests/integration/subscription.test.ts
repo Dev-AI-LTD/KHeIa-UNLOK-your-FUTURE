@@ -120,6 +120,8 @@ describe('subscription integration', () => {
       planType: 'free',
       currentPeriodEnd: null,
       referralPremiumUntil: null,
+      isCancelled: false,
+      willRenew: false,
     };
 
     it('returns true when premium', async () => {

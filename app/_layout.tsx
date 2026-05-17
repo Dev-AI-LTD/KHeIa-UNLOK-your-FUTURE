@@ -4,6 +4,7 @@ import { KindeAuthProvider } from '@kinde/expo';
 import { AppBackground } from '@/components/common/AppBackground';
 import { CatalogProvider } from '@/components/common/CatalogProvider';
 import { StreakUpdater } from '@/components/common/StreakUpdater';
+import { RevenueCatBootstrap } from '@/components/common/RevenueCatBootstrap';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { SkinProvider } from '@/contexts/SkinContext';
 import { bridgeKindeToSupabase } from '@/services/auth.service';
@@ -35,6 +36,7 @@ export default function RootLayout() {
     >
     <SkinProvider>
     <AppBackground>
+      <RevenueCatBootstrap />
       <StreakUpdater />
       <CatalogProvider>
       <Stack

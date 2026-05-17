@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing, radius, sizes, iosText } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
 
@@ -55,7 +55,7 @@ export default function SubjectsScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + spacing.md }]}>
+    <View style={[styles.container, { paddingTop: insets.top + spacing.screenPadding }]}>
       <Pressable
         onPress={() => router.back()}
         style={styles.back}
@@ -113,45 +113,51 @@ const styles = StyleSheet.create({
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: spacing.screenPadding,
   },
   back: {
     alignSelf: 'flex-start',
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.screenPadding,
+    marginBottom: spacing.fieldGap,
+    minHeight: sizes.touchTarget,
+    minWidth: sizes.touchTarget,
+    justifyContent: 'center',
   },
   backText: {
-    fontSize: typography.size.md,
-    fontWeight: '600',
+    ...iosText('headline'),
     color: colors.dark.primary,
+    textAlign: 'left',
   },
   title: {
-    fontSize: typography.size.xl,
-    fontWeight: '700',
+    ...iosText('title2'),
     color: colors.dark.text,
-    marginHorizontal: spacing.lg,
+    marginHorizontal: spacing.screenPadding,
+    textAlign: 'left',
   },
   subtitle: {
-    fontSize: typography.size.sm,
+    ...iosText('body'),
     color: colors.dark.muted,
-    marginHorizontal: spacing.lg,
+    marginHorizontal: spacing.screenPadding,
     marginTop: spacing.xs,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sectionGap,
+    textAlign: 'left',
   },
   scroll: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.screenPadding,
   },
   subjectGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.fieldGap,
   },
   subjectCardWrap: {
     width: '48%',
     flexGrow: 0,
+    minHeight: sizes.touchTarget,
   },
   subjectCardPressed: {
     opacity: 0.9,
@@ -160,37 +166,43 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(2, 6, 23, 0.65)',
     borderColor: 'rgba(148, 163, 184, 0.25)',
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.cardPadding,
+    borderRadius: radius.md,
+    flex: 1,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
   },
   subjectHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   subjectIcon: {
-    fontSize: 12,
+    ...iosText('caption1'),
     marginRight: spacing.sm,
   },
   subjectText: {
     flex: 1,
   },
   cardTitle: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     fontWeight: '700',
     color: colors.dark.text,
+    textAlign: 'left',
   },
   cardMeta: {
     marginTop: spacing.xs,
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.muted,
+    textAlign: 'left',
   },
   subjectArrow: {
-    fontSize: typography.size.lg,
+    ...iosText('title3'),
     color: colors.dark.muted,
   },
   empty: {
-    fontSize: typography.size.md,
+    ...iosText('body'),
     color: colors.dark.muted,
-    textAlign: 'center',
-    marginTop: spacing.xl,
+    textAlign: 'left',
+    marginTop: spacing.sectionGap,
   },
 });

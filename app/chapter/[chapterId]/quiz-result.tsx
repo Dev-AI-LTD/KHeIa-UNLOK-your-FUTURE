@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { View, Text, StyleSheet, Pressable, Share } from 'react-native';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing, radius, sizes, iosText } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { supabase } from '@/services/supabase';
 import { onQuizFinished } from '@/services/progress-events.service';
 import { buildProgressCertificateShareText } from '@/services/gamification.service';
 import { monitorPerformance } from '@/services/quiz.service';
+import { useSubscription } from '@/hooks/useSubscription';
+import {
+  isRevenueCatConfigured,
+  presentPaywallIfNeeded,
+} from '@/services/purchases.service';
 
 const TOTAL_QUESTIONS = 10;
 
@@ -22,6 +27,9 @@ export default function ChapterQuizResultScreen() {
   const [bonusCoins, setBonusCoins] = useState<number | null>(null);
   const [suggestedChapter, setSuggestedChapter] = useState<{ chapterId: string; title: string } | null>(null);
   const [showDiscountOffer, setShowDiscountOffer] = useState(false);
+  const { isPremium, refreshAfterPurchase } = useSubscription();
+  const showUpgradeCta =
+    (fromFreeQuiz === 'true' || showDiscountOffer) && !isPremium;
 
   useEffect(() => {
     if (!chapterId || !correctCount) return;
@@ -56,6 +64,16 @@ export default function ChapterQuizResultScreen() {
   const correct = Math.min(TOTAL_QUESTIONS, Math.max(0, parseInt(correctCount ?? '0', 10)));
   const coins = 5 + correct;
   const xpGained = correct * 10;
+
+  const handleUpgrade = async () => {
+    if (!isRevenueCatConfigured()) {
+      return;
+    }
+    const { result } = await presentPaywallIfNeeded();
+    if (result === 'PURCHASED' || result === 'RESTORED') {
+      await refreshAfterPurchase();
+    }
+  };
 
   const handleShareCertificate = async () => {
     const message = buildProgressCertificateShareText(
@@ -98,6 +116,19 @@ export default function ChapterQuizResultScreen() {
         </GlassCard>
       )}
 
+      {showUpgradeCta ? (
+        <Pressable
+          onPress={() => void handleUpgrade()}
+          style={({ pressed }) => [styles.paywallBtn, pressed && styles.buttonPressed]}
+        >
+          <GlassCard dark intensity={18} style={styles.paywallBtnInner}>
+            <Text style={styles.paywallBtnText}>
+              Deblochează 10 întrebări și acces complet
+            </Text>
+          </GlassCard>
+        </Pressable>
+      ) : null}
+
       <Pressable
         onPress={handleShareCertificate}
         style={({ pressed }) => [styles.shareBtn, pressed && styles.buttonPressed]}
@@ -131,103 +162,115 @@ export default function ChapterQuizResultScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: spacing.lg,
+    paddingHorizontal: spacing.screenPadding,
+    paddingVertical: spacing.lg,
     backgroundColor: 'transparent',
   },
   title: {
-    fontSize: typography.size.xl,
-    fontWeight: '700',
+    ...iosText('title2'),
     color: colors.dark.text,
   },
   score: {
     marginTop: spacing.md,
-    fontSize: typography.size.lg,
+    ...iosText('title3'),
     color: colors.dark.text,
   },
   coins: {
     marginTop: spacing.sm,
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     color: colors.dark.primary,
-    fontWeight: '600',
   },
   xp: {
     marginTop: spacing.xs,
-    fontSize: typography.size.sm,
-    color: colors.dark.muted,
+    ...iosText('subhead'),
     fontWeight: '600',
+    color: colors.dark.muted,
   },
   conciergeCard: {
     marginTop: spacing.lg,
     padding: spacing.lg,
     backgroundColor: 'rgba(59, 130, 246, 0.15)',
     borderColor: 'rgba(59, 130, 246, 0.4)',
+    borderRadius: radius.lg,
   },
   conciergeTitle: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     fontWeight: '700',
     color: colors.dark.secondary,
     marginBottom: spacing.sm,
   },
   conciergeText: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     color: colors.dark.text,
-    lineHeight: 20,
   },
   conciergeBonus: {
     marginTop: spacing.sm,
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     fontWeight: '600',
     color: colors.dark.primary,
   },
   suggestedBtn: {
     marginTop: spacing.md,
     padding: spacing.sm,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
   },
   suggestedBtnText: {
-    fontSize: typography.size.sm,
+    ...iosText('subhead'),
     fontWeight: '600',
     color: colors.dark.secondary,
   },
   shareBtn: {
     marginTop: spacing.xl,
     marginBottom: spacing.sm,
+    minHeight: sizes.touchTarget,
   },
   shareBtnInner: {
     padding: spacing.md,
     alignItems: 'center',
     backgroundColor: 'rgba(34, 211, 238, 0.15)',
     borderColor: 'rgba(34, 211, 238, 0.4)',
+    borderRadius: radius.md,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
   },
   shareBtnText: {
-    fontSize: typography.size.md,
-    fontWeight: '600',
+    ...iosText('headline'),
     color: colors.dark.secondary,
   },
   paywallBtn: {
     marginBottom: spacing.sm,
+    minHeight: sizes.touchTarget,
   },
   paywallBtnInner: {
     padding: spacing.lg,
     alignItems: 'center',
     backgroundColor: 'rgba(59, 130, 246, 0.25)',
     borderColor: 'rgba(59, 130, 246, 0.5)',
+    borderRadius: radius.md,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
   },
   paywallBtnText: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     fontWeight: '700',
     color: '#60a5fa',
   },
   ctaBtn: {
     marginBottom: spacing.md,
+    minHeight: sizes.touchTarget,
   },
   ctaBtnInner: {
     padding: spacing.lg,
     alignItems: 'center',
     backgroundColor: 'rgba(34, 197, 94, 0.2)',
     borderColor: 'rgba(34, 197, 94, 0.4)',
+    borderRadius: radius.md,
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
   },
   ctaBtnText: {
-    fontSize: typography.size.md,
+    ...iosText('headline'),
     fontWeight: '700',
     color: '#22C55E',
   },
@@ -235,15 +278,16 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     padding: spacing.md,
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    borderRadius: 12,
+    borderRadius: radius.md,
     alignItems: 'center',
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
   },
   buttonPressed: {
     opacity: 0.9,
   },
   buttonText: {
-    fontSize: typography.size.md,
-    fontWeight: '600',
+    ...iosText('headline'),
     color: colors.dark.secondary,
   },
 });
