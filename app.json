@@ -3,7 +3,7 @@
     "name": "KHEYA - Unlock Your Future",
     "slug": "kheia",
     "scheme": "kheia",
-    "version": "0.3.2",
+    "version": "0.3.3",
     "orientation": "default",
     "platforms": [
       "ios",
@@ -42,7 +42,7 @@
     },
     "description": "Pregătire Evaluare Națională 2026, Bacalaureat Română, simulări admitere. Teorie, quiz-uri și teste pentru EN și BAC.",
     "android": {
-      "versionCode": 9,
+      "versionCode": 10,
       "package": "com.kheia.edumat",
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "resize",
@@ -59,7 +59,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.kheia.edumat",
-      "buildNumber": "9",
+      "buildNumber": "10",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

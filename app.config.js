@@ -25,5 +25,11 @@ module.exports = ({ config }) => ({
     EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? '',
     EXPO_PUBLIC_KINDE_DOMAIN: process.env.EXPO_PUBLIC_KINDE_DOMAIN?.trim() ?? '',
     EXPO_PUBLIC_KINDE_CLIENT_ID: process.env.EXPO_PUBLIC_KINDE_CLIENT_ID?.trim() ?? '',
+    EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE:
+      process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE?.trim() ?? '',
+    EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE:
+      process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE?.trim() ?? '',
+    EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID:
+      process.env.EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID?.trim() || 'KheIA Pro',
   },
 });

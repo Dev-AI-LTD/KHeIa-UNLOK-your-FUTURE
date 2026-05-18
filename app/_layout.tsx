@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { Stack } from 'expo-router';
 import { KindeAuthProvider } from '@kinde/expo';
 import { AppBackground } from '@/components/common/AppBackground';
@@ -9,8 +10,16 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { SkinProvider } from '@/contexts/SkinContext';
 import { bridgeKindeToSupabase } from '@/services/auth.service';
 
-const kindeDomain = process.env.EXPO_PUBLIC_KINDE_DOMAIN ?? '';
-const kindeClientId = process.env.EXPO_PUBLIC_KINDE_CLIENT_ID ?? '';
+const extra = Constants.expoConfig?.extra as Record<string, string | undefined> | undefined;
+
+const kindeDomain =
+  process.env.EXPO_PUBLIC_KINDE_DOMAIN?.trim() ||
+  extra?.EXPO_PUBLIC_KINDE_DOMAIN?.trim() ||
+  '';
+const kindeClientId =
+  process.env.EXPO_PUBLIC_KINDE_CLIENT_ID?.trim() ||
+  extra?.EXPO_PUBLIC_KINDE_CLIENT_ID?.trim() ||
+  '';
 
 export default function RootLayout() {
   return (
