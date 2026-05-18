@@ -4,23 +4,29 @@ import type { PurchasesPackage } from 'react-native-purchases';
 
 const extra = Constants.expoConfig?.extra as Record<string, string | undefined> | undefined;
 
-function readPublicEnv(name: string, fallback = ''): string {
-  const fromEnv =
-    typeof process !== 'undefined'
-      ? (process.env as Record<string, string | undefined>)?.[name]
-      : undefined;
-  return (fromEnv ?? extra?.[name] ?? fallback).trim();
+/** Acces static la process.env — Metro înlocuiește EXPO_PUBLIC_* la build; accesul dinamic [name] nu merge în release. */
+function pickEnv(staticValue: string | undefined, extraKey: string, fallback = ''): string {
+  return (staticValue ?? extra?.[extraKey] ?? fallback).trim();
 }
 
-const APPLE_KEY = readPublicEnv('EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE');
-const GOOGLE_KEY = readPublicEnv('EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE');
+const APPLE_KEY = pickEnv(
+  process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE,
+  'EXPO_PUBLIC_REVENUECAT_API_KEY_APPLE',
+);
+const GOOGLE_KEY = pickEnv(
+  process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE,
+  'EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE',
+);
 
 /**
  * RevenueCat entitlement Identifier (API) — dashboard may show display name „KheIA Pro”.
  * Must match RevenueCat → Entitlements → Identifier exactly. User-facing brand is KHEYA.
  */
-export const KHEIA_PRO_ENTITLEMENT_ID =
-  readPublicEnv('EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID', 'KheIA Pro');
+export const KHEIA_PRO_ENTITLEMENT_ID = pickEnv(
+  process.env.EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID,
+  'EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID',
+  'KheIA Pro',
+);
 
 /** RevenueCat nu rulează pe web. */
 const isNative = Platform.OS === 'ios' || Platform.OS === 'android';

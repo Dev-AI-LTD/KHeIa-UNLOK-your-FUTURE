@@ -39,6 +39,7 @@ export default function ChatScreen() {
     loading,
     connectionStatus,
     error,
+    errorTitle,
     postMessage,
     refresh,
   } = useGlobalChat();
@@ -115,7 +116,7 @@ export default function ChatScreen() {
 
       {error ? (
         <EmptyState
-          title="Chat neconfigurat"
+          title={errorTitle ?? 'Chat neconfigurat'}
           subtitle={error}
           icon="server-outline"
           actionLabel="Reîncearcă"

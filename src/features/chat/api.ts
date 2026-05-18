@@ -5,6 +5,26 @@ import type { Profile } from '@/features/auth/types';
 const GLOBAL_ROOM_SLUG = 'global-chat';
 const MESSAGE_PAGE_SIZE = 50;
 
+/** Chat FK-urile cer un rând în profiles — Kinde poate crea user fără profil încă. */
+export async function ensureChatProfile(userId: string): Promise<void> {
+  const { data: existing, error: readError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (readError) throw readError;
+  if (existing) return;
+
+  const fallbackName = `User_${userId.slice(0, 6)}`;
+  const { error: upsertError } = await supabase.from('profiles').upsert(
+    { id: userId, display_name: fallbackName, username: fallbackName },
+    { onConflict: 'id' },
+  );
+
+  if (upsertError) throw upsertError;
+}
+
 export async function fetchGlobalRoom(): Promise<Room | null> {
   const { data, error } = await supabase
     .from('rooms')
@@ -17,6 +37,8 @@ export async function fetchGlobalRoom(): Promise<Room | null> {
 }
 
 export async function ensureRoomMembership(roomId: string, userId: string): Promise<void> {
+  await ensureChatProfile(userId);
+
   const { data: existing } = await supabase
     .from('room_members')
     .select('room_id')

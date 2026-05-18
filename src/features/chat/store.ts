@@ -8,13 +8,14 @@ type ChatStore = {
   loading: boolean;
   connectionStatus: 'connecting' | 'connected' | 'disconnected';
   error: string | null;
+  errorTitle: string | null;
   setActiveRoom: (room: Room | null) => void;
   setMessages: (messages: ChatMessageViewModel[]) => void;
   addMessage: (message: ChatMessageViewModel) => void;
   setOnlineUsers: (users: OnlineUser[]) => void;
   setLoading: (loading: boolean) => void;
   setConnectionStatus: (status: 'connecting' | 'connected' | 'disconnected') => void;
-  setError: (error: string | null) => void;
+  setError: (error: { title: string; subtitle: string } | null) => void;
   reset: () => void;
 };
 
@@ -25,6 +26,7 @@ export const useChatStore = create<ChatStore>((set) => ({
   loading: false,
   connectionStatus: 'connecting',
   error: null,
+  errorTitle: null,
   setActiveRoom: (activeRoom) => set({ activeRoom }),
   setMessages: (messages) => set({ messages }),
   addMessage: (message) =>
@@ -37,7 +39,11 @@ export const useChatStore = create<ChatStore>((set) => ({
   setOnlineUsers: (onlineUsers) => set({ onlineUsers }),
   setLoading: (loading) => set({ loading }),
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
-  setError: (error) => set({ error }),
+  setError: (payload) =>
+    set({
+      error: payload?.subtitle ?? null,
+      errorTitle: payload?.title ?? null,
+    }),
   reset: () =>
     set({
       activeRoom: null,
@@ -46,5 +52,6 @@ export const useChatStore = create<ChatStore>((set) => ({
       loading: false,
       connectionStatus: 'disconnected',
       error: null,
+      errorTitle: null,
     }),
 }));

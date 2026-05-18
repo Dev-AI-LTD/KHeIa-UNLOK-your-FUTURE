@@ -12,13 +12,51 @@ import {
 import { subscribeToChatRoom } from './realtime';
 import type { ChatMessageViewModel } from './types';
 
-function formatChatError(e: unknown): string {
-  const err = e as { code?: string; message?: string };
-  if (err?.code === 'PGRST205' || err?.message?.includes('public.rooms')) {
-    return 'Tabelele chat nu sunt create în Supabase. Rulează SQL-ul din docs/supabase-chat-copy-paste.sql (Dashboard → SQL Editor), apoi apasă Reîncearcă.';
+function formatChatError(e: unknown): { title: string; subtitle: string } {
+  const err = e as { code?: string; message?: string; details?: string };
+  const msg =
+    err?.message ??
+    err?.details ??
+    (e instanceof Error ? e.message : typeof e === 'string' ? e : '');
+
+  if (err?.code === 'PGRST205' || msg.includes('public.rooms') || msg.includes('public.messages')) {
+    return {
+      title: 'Chat neconfigurat',
+      subtitle:
+        'Tabelele chat nu sunt create în Supabase. Rulează SQL-ul din docs/supabase-chat-copy-paste.sql (Dashboard → SQL Editor), apoi apasă Reîncearcă.',
+    };
   }
-  if (e instanceof Error) return e.message;
-  return 'Chat indisponibil momentan.';
+  if (msg.includes('Global Chat nu există') || msg.includes('migrarea SQL 020')) {
+    return { title: 'Chat neconfigurat', subtitle: msg };
+  }
+  if (msg.includes('foreign key') || msg.includes('profiles')) {
+    return {
+      title: 'Profil incomplet',
+      subtitle:
+        'Profilul tău nu e în baza de date. Ieși din cont, autentifică-te din nou, apoi apasă Reîncearcă.',
+    };
+  }
+  if (msg.includes('JWT') || msg.toLowerCase().includes('session')) {
+    return {
+      title: 'Sesiune expirată',
+      subtitle: 'Reautentifică-te și deschide din nou tab-ul Chat.',
+    };
+  }
+  if (msg.includes('missing-anon-key') || msg.includes('placeholder')) {
+    return {
+      title: 'Chat neconfigurat',
+      subtitle:
+        'Lipsesc cheile Supabase în build. Verifică EXPO_PUBLIC_SUPABASE_URL și EXPO_PUBLIC_SUPABASE_ANON_KEY în EAS (production).',
+    };
+  }
+  if (msg.trim()) {
+    return { title: 'Chat indisponibil', subtitle: msg.trim() };
+  }
+  return {
+    title: 'Chat indisponibil',
+    subtitle:
+      'Verifică conexiunea la internet și că migrarea chat (020) a fost rulată în Supabase → SQL Editor.',
+  };
 }
 
 function toViewModel(
@@ -55,6 +93,7 @@ export function useGlobalChat() {
     setConnectionStatus,
     setError,
     error,
+    errorTitle,
     reset,
   } = useChatStore();
 
@@ -155,6 +194,7 @@ export function useGlobalChat() {
     loading,
     connectionStatus,
     error,
+    errorTitle,
     postMessage,
     refresh: bootstrap,
   };

@@ -430,7 +430,9 @@ export default function ProfileScreen() {
     if (!isRevenueCatConfigured()) {
       Alert.alert(
         'Indisponibil',
-        'Adaugă EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE în .env și reconstruiește app-ul (npm run android).',
+        __DEV__
+          ? 'Adaugă EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE în .env și reconstruiește app-ul (npm run android).'
+          : 'Plățile nu sunt disponibile în această versiune. Actualizează aplicația din Play Store sau contactează contact@kheya.ro.',
       );
       return;
     }
