@@ -42,7 +42,7 @@
     },
     "description": "Pregătire Evaluare Națională 2026, Bacalaureat Română, simulări admitere. Teorie, quiz-uri și teste pentru EN și BAC.",
     "android": {
-      "versionCode": 6,
+      "versionCode": 8,
       "package": "com.kheia.edumat",
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "resize",
@@ -59,7 +59,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.kheia.edumat",
-      "buildNumber": "7",
+      "buildNumber": "8",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
