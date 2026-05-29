@@ -2,47 +2,49 @@
 
 Detalii despre ce se întâmplă la login, înregistrare, resetare parolă și abonament: de la cine primesc utilizatorii emailuri și unde ajung în app după fiecare acțiune.
 
----
-
-## 1. Log in (conectare) – email + parolă
-
-| Ce face userul | Ce primește | Unde ajunge în app |
-|----------------|-------------|---------------------|
-| Completează email + parolă, apasă **Conectare** | **Niciun email.** Doar se verifică datele. | După succes → **Acasă** (`/(tabs)/home`). |
-
-**De la cine ar veni eventual un email:** Nu se trimite niciun email la log in. Autentificarea e instant.
+**Autentificare actuală:** doar **email + parolă** prin **Kinde** (hosted UI). **Nu** există login social (Google / Apple / Facebook) în app sau în Kinde.
 
 ---
 
-## 2. Înregistrare (sign up) – email + parolă
+## 1. Log in (conectare) – email + parolă (Kinde)
 
 | Ce face userul | Ce primește | Unde ajunge în app |
 |----------------|-------------|---------------------|
-| Completează email + parolă, apasă **Înregistrare** | **Email de confirmare** trimis de **Supabase** (nu de KHEYA). Conține un link pe care userul trebuie să-l apese pentru a-și confirma contul. | App-ul afișează un **Alert**: „Verifică email-ul – Am trimis un link de confirmare. Verifică inbox-ul și apasă linkul.” La **OK** → **Acasă** (`/(tabs)/home`). Nu există o pagină separată „Mulțumire după înregistrare” – doar acest mesaj. |
+| Apasă **Autentificare** → se deschide pagina Kinde → completează email + parolă | **Niciun email** la login reușit. | După succes → bridge Kinde→Supabase → **Acasă** (`/(tabs)/home`). |
 
-**De la cine vine emailul:** **Supabase Auth**. Expeditorul, subiectul și textul se configurează în **Supabase Dashboard → Authentication → Email Templates** (Confirm signup). Dacă nu configurezi nimic, Supabase folosește șablonul implicit (expeditor: noreply de la proiectul tău Supabase).
+**Implementare:** `app/(auth)/login.tsx` → `kinde.login()` → `bridgeKindeToSupabase()` → sesiune Supabase.
 
-**Notă:** Dacă în Supabase este dezactivată „Confirm email” (Authentication → Providers → Email), userul poate folosi contul imediat fără să confirme emailul; atunci nu primește niciun email la înregistrare.
+**De la cine ar veni eventual un email:** Nu se trimite email la log in reușit.
 
 ---
 
-## 3. Log in cu Google
+## 2. Înregistrare (sign up) – email + parolă (Kinde)
 
 | Ce face userul | Ce primește | Unde ajunge în app |
 |----------------|-------------|---------------------|
-| Apasă **Continua cu Google** și completează fluxul în browser | **Niciun email** de confirmare. Contul e creat/folosit direct prin Google. | După succes → **Acasă** (`/(tabs)/home`). |
+| Apasă **Creează cont gratuit** → pagina Kinde → email + parolă | Depinde de setările **Kinde** (confirmare email activă/inactivă). | După succes → bridge → **Acasă** (`/(tabs)/home`). |
 
-**De la cine ar veni email:** Nu se trimite email. OAuth cu Google nu necesită confirmare prin email în app.
+**De la cine vine emailul (dacă e activ):** **Kinde** (nu Supabase Auth direct). Șabloanele se configurează în **Kinde Dashboard** → Authentication / Email.
+
+**Notă:** Dacă confirmarea email e dezactivată în Kinde, contul e utilizabil imediat, fără email de verificare.
 
 ---
 
-## 4. Ai uitat parola (reset parolă)
+## 3. Login social (Google / Apple / Facebook)
+
+**Nu este oferit.** Nu există butoane „Continuă cu Google” în app; conexiunile sociale trebuie să rămână **dezactivate** în Kinde Dashboard.
+
+Pentru **App Store**: **Sign in with Apple nu e obligatoriu** (Guideline 4.8) cât timp rămâne doar email + parolă.
+
+---
+
+## 4. Reset parolă
 
 | Ce face userul | Ce primește | Unde ajunge în app |
 |----------------|-------------|---------------------|
-| Introduce email-ul și apasă **Trimite link** (în modul „Ai uitat parola?”) | **Email de resetare parolă** trimis de **Supabase**. Conține link pentru setarea unei parole noi. | App-ul afișează **Alert**: „Email trimis – Verifică inbox-ul pentru linkul de resetare parolă.” Rămâne pe ecranul de login (modul „Ai uitat parola” se poate schimba înapoi la „Conectare”). Nu există pagină dedicată „Mulțumire”. |
+| Din pagina Kinde (link „Forgot password?” / echivalent), dacă e activ în dashboard | **Email de resetare** de la **Kinde** | Setează parola nouă în browser/Kinde, apoi se loghează din nou în app |
 
-**De la cine vine emailul:** **Supabase Auth**. Șablon în **Supabase Dashboard → Authentication → Email Templates** (Reset password).
+**Notă:** App-ul nativ **nu** are încă ecran dedicat „Ai uitat parola?” — resetarea se face pe UI-ul Kinde la autentificare.
 
 ---
 
@@ -50,33 +52,28 @@ Detalii despre ce se întâmplă la login, înregistrare, resetare parolă și a
 
 | Ce face userul | Ce primește | Unde ajunge în app |
 |----------------|-------------|---------------------|
-| Ajunge pe ecranul **KHEYA Premium** (`/subscription`), alege planul (Lunar/Anual) și finalizează plata | **Chitanță / confirmare de la magazin:** Google Play sau App Store trimit email/chitanță (în funcție de setările utilizatorului la contul Google/Apple). **Aplicația KHEYA nu trimite un email separat** de confirmare abonament. | După plată reușită → **Pagina de succes** (`/subscription-success`): mesaj „Felicitări!”, confetti, text de tip „Ai activat KHEYA [Lunar/Anual]. Accesul complet este deblocat!”. După ~2,5 secunde → **Tab-urile principale** (`/(tabs)`), de obicei Acasă. |
+| **Profil → Setări → Deblochează KHEYA Pro** (sau paywall din capitol/quiz) → finalizează plata în magazin | **Chitanță de la magazin:** Google Play sau App Store (după setările contului). KHEYA nu trimite email de confirmare abonament. | Entitlement RevenueCat activ → conținut Pro deblocat în app. |
 
-**Unde se face plata:** În app – ecranul `/subscription` (lista de planuri). La apăsarea pe un plan, se deschide **fluxul nativ** de plată (Google Play sau App Store), apoi revenire în app. Nu există redirect către un site extern de plată; totul rămâne în aplicație prin RevenueCat + magazin.
+**Restaurare / gestionare:** **Profil → Setări → Restaurare / Gestionează abonamentul** (`presentCustomerCenter()`).
 
-**Email de confirmare abonament:** Nu este trimis din KHEYA. Utilizatorul poate primi chitanță/email de la **Google Play** sau **Apple** (în funcție de preferințele contului lor). RevenueCat nu trimite emailuri către utilizatori.
+**Plata:** flux nativ **RevenueCat + Google Play / App Store** (fără site extern de plată).
 
 ---
 
 ## Rezumat rapid
 
-| Acțiune | Email trimis? | De la cine? | Pagină „mulțumire” / destinație în app |
-|---------|----------------|-------------|----------------------------------------|
-| **Log in** (email) | Nu | – | Acasă |
-| **Înregistrare** (email) | Da – confirmare cont | Supabase | Alert + Acasă (fără pagină dedicată) |
-| **Log in Google** | Nu | – | Acasă |
-| **Reset parolă** | Da – link resetare | Supabase | Alert, rămâne pe login |
-| **Abonament** | Nu din app; eventual chitanță de la magazin | Google / Apple | Pagină succes → apoi Acasă (tabs) |
+| Acțiune | Email trimis? | De la cine? | Destinație în app |
+|---------|----------------|-------------|-------------------|
+| **Log in** (email, Kinde) | Nu | – | Acasă |
+| **Înregistrare** (email, Kinde) | Opțional – confirmare | Kinde | Acasă |
+| **Login social** | N/A | – | **Nu există** |
+| **Reset parolă** | Da – link resetare | Kinde | Re-login în app |
+| **Abonament** | Nu din app; eventual chitanță magazin | Google Play / Apple | Pro activ în app |
 
 ---
 
-## Configurare emailuri Supabase (opțional)
+## Configurare (Kinde + review)
 
-- **Supabase Dashboard** → **Authentication** → **Email Templates**  
-  Aici poți schimba textul și subiectul pentru:
-  - Confirm signup
-  - Reset password
-- **Authentication** → **Providers** → **Email**  
-  Aici poți activa/dezactiva **Confirm email** (obligativitatea confirmării prin email la înregistrare).
-- **Project Settings** → **Auth** → **SMTP** (opțional)  
-  Poți seta un SMTP propriu ca să trimiți emailurile de auth de la un domeniu al tău (ex: `noreply@kheia.ro`) în loc de adresa implicită Supabase.
+- **Kinde Dashboard** → Authentication: doar **Email** activ; **dezactivează** Google/Apple/Facebook.
+- **Callback URL** (build nativ): `kheia://kinde_callback` (vezi `src/lib/kindeConfig.ts`).
+- **App Review Notes (iOS):** „Authentication is email-only via Kinde. No third-party social login.”

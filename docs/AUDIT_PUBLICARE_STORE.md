@@ -22,7 +22,7 @@ Listă de verificări ca la o revizie de tip „Google / Apple” înainte de ap
 
 | # | Element | Status | Acțiune |
 |---|--------|--------|---------|
-| 2.1 | **Restore purchases** | ⬜ | **Lipsește.** Google și Apple cer ca userul să poate restaura cumpărătorile. Există `presentCustomerCenter()` în `purchases.service.ts` dar nu e apelat nicăieri. Adaugă pe ecranul de abonament (și/sau în Profil) un buton „Restaurare cumpărături” / „Gestionează abonamentul” care apelează `presentCustomerCenter()`. |
+| 2.1 | **Restore purchases** | ✅ | Buton **„Restaurare / Gestionează abonamentul”** în Profil → Setări (`presentCustomerCenter()`). |
 | 2.2 | **Anulare abonament** | ⬜ | Textul „Anulare oricând” pe ecranul de abonament e ok; asigură-te că în Customer Center (RevenueCat) userul poate deschide setările de abonament de la Google/Apple pentru anulare. |
 | 2.3 | **Prețuri afișate clar** | ✅ | Prețuri RON pe planuri (Lunar, Anual). Verifică că prețurile din app sunt aliniate cu cele din Play/App Store. |
 | 2.4 | **Perioadă de facturare** | ⬜ | Menționează explicit „facturare lunară” / „facturare anuală” lângă preț (ex. „X RON/lună”, „Y RON/an”). |
@@ -34,9 +34,9 @@ Listă de verificări ca la o revizie de tip „Google / Apple” înainte de ap
 | # | Element | Status | Acțiune |
 |---|--------|--------|---------|
 | 3.1 | **Deconectare** | ✅ | Buton Deconectare în Profil. |
-| 3.2 | **Recuperare parolă** | ✅ | „Ai uitat parola?” pe login. |
-| 3.3 | **Confirmare email** | ⬜ | Decizie: la înregistrare cu email, Supabase poate trimite link de confirmare. Dacă „Confirm email” e activat, userul trebuie să confirme înainte de a folosi contul – asigură-te că mesajul din app („Verifică email-ul”) e clar. |
-| 3.4 | **Google Sign-In** | ✅ | Implementat; redirect `kheia://auth/callback` configurat în Supabase. |
+| 3.2 | **Recuperare parolă** | ⬜ | Reset parolă prin **pagina Kinde** (hosted UI), nu ecran dedicat în app. Verifică că „Forgot password” funcționează în Kinde. |
+| 3.3 | **Confirmare email** | ⬜ | Decizie în **Kinde Dashboard**: confirmare email la înregistrare activă/inactivă. Mesaj clar pentru user dacă e obligatorie. |
+| 3.4 | **Autentificare doar email (Kinde)** | ✅ | Login/register prin Kinde (`kinde.login` / `kinde.register`). **Fără** login social (Google/Apple/Facebook). **Sign in with Apple nu e obligatoriu** (Guideline 4.8). |
 
 ---
 
@@ -84,13 +84,13 @@ Listă de verificări ca la o revizie de tip „Google / Apple” înainte de ap
 |---|------|-----------------|
 | 7.1 | **Prima deschidere** | Prezentare → Onboarding (examen, nivel) → Home. Fără crash. |
 | 7.2 | **Fără cont** | „Continuă fără cont” → Home. Progres local; la reinstall progresul se pierde – e acceptabil dacă e comunicat. |
-| 7.3 | **Înregistrare email** | Înregistrare → mesaj „Verifică email-ul” → (după confirmare) login → Home. |
-| 7.4 | **Login Google** | Continua cu Google → browser → revenire în app → Home. |
+| 7.3 | **Înregistrare email (Kinde)** | Creează cont → pagina Kinde → (confirmare email dacă e activă în Kinde) → login → Home. |
+| 7.4 | **Login email (Kinde)** | Autentificare → pagina Kinde (email + parolă) → revenire în app → Home. **Fără** Google/social. |
 | 7.5 | **Reset parolă** | Ai uitat parola → email trimis → link funcțional. |
 | 7.6 | **Capitol + teorie** | Alege materie → capitol → teorie (și genera teorie dacă e cazul). Conținut afișat corect. |
 | 7.7 | **Quiz** | Quiz pe capitol → răspunsuri → rezultat. Fără crash când nu sunt întrebări. |
-| 7.8 | **Abonament** | Ecran Premium → alegere plan → flux Google Play / App Store → succes → redirect la succes. După achiziție, limită de întrebări / conținut deblocat. |
-| 7.9 | **Restaurare cumpărături** | După ce adaugi butonul: tap „Restaurare” → Customer Center sau restore → abonamentul activ se reflectă în app. |
+| 7.8 | **Abonament** | Profil → Deblochează KHEYA Pro → paywall RevenueCat → flux Google Play / App Store → Pro activ. |
+| 7.9 | **Restaurare cumpărături** | Profil → Restaurare / Gestionează abonamentul → Customer Center → abonament reflectat în app. |
 | 7.10 | **Profil** | Evoluție, statistici, Legal (GDPR, Confidentialitate, Termeni), Setări cont, Deconectare. |
 | 7.11 | **Deep link** | Duel invite, share test – link-ul deschide app-ul și ajunge la ecranul corect. |
 
@@ -100,7 +100,7 @@ Listă de verificări ca la o revizie de tip „Google / Apple” înainte de ap
 
 | # | Element | Status | Acțiune |
 |---|--------|--------|---------|
-| 8.1 | **Supabase** | ⬜ | Migrații aplicate (inclusiv 015 pentru profil la sign-up). Redirect URL pentru Google OAuth: `kheia://auth/callback` în dashboard. |
+| 8.1 | **Supabase + Kinde** | ⬜ | `kinde-bridge` deployat. Callback Kinde: `kheia://kinde_callback`. **Fără** Google OAuth în Supabase (auth doar email via Kinde). |
 | 8.2 | **RevenueCat** | ⬜ | Produse (monthly, yearly) și offering configurate; pe production folosești cheia de producție (nu test_). |
 | 8.3 | **Node backend (Railway)** | ⬜ | Generare teorie / chat – URL setat în env; health check ok. |
 | 8.4 | **Edge Functions (Supabase)** | ⬜ | Dacă le folosești, sunt deployate și invocabile. |
@@ -123,9 +123,10 @@ Listă de verificări ca la o revizie de tip „Google / Apple” înainte de ap
 **Obligatorii înainte de trimitere:**
 - Privacy Policy + Terms URL-uri publice și completate în store.
 - Data safety (Play) / App Privacy (iOS) completate.
-- **Restore purchases** / Customer Center vizibil în app.
+- **Restore purchases** / Customer Center vizibil în app (Profil → Setări).
 - Ștergere cont (GDPR) – flow sau instrucțiuni clare + contact.
 - Icon, splash, versiune/build, screenshot-uri, clasificare vârstă.
+- **Kinde:** doar email activ; fără conexiuni sociale (Google/Apple/Facebook).
 
 **Recomandate puternic:**
 - Error Boundary la rădăcină.
