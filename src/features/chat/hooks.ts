@@ -11,6 +11,7 @@ import {
 } from './api';
 import { subscribeToChatRoom } from './realtime';
 import type { ChatMessageViewModel } from './types';
+import { logger } from '@/lib/logger';
 
 function formatChatError(e: unknown): { title: string; subtitle: string } {
   const err = e as { code?: string; message?: string; details?: string };
@@ -140,7 +141,7 @@ export function useGlobalChat() {
         onStatus: setConnectionStatus,
       });
     } catch (e) {
-      console.error('[Chat] bootstrap failed:', e);
+      logger.error('Chat', 'bootstrap failed', e);
       setError(formatChatError(e));
       setConnectionStatus('disconnected');
     } finally {

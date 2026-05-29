@@ -1,6 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { createClient } from '@supabase/supabase-js';
+import { authStorage } from '@/lib/authStorage';
+import { logger } from '@/lib/logger';
 
 const extra = Constants.expoConfig?.extra as Record<string, string | undefined> | undefined;
 
@@ -15,8 +16,9 @@ const key =
   '';
 
 if (!url || !key || url.includes('placeholder')) {
-  console.warn(
-    '[Supabase] Lipsesc EXPO_PUBLIC_SUPABASE_URL / ANON_KEY. Verifică .env și repornește cu: npx expo start --clear',
+  logger.warn(
+    'Supabase',
+    'Lipsesc EXPO_PUBLIC_SUPABASE_URL / ANON_KEY. Verifică .env și repornește cu: npx expo start --clear',
   );
 }
 
@@ -28,7 +30,7 @@ export const supabase = createClient(
   supabaseAnonKey,
   {
     auth: {
-      storage: AsyncStorage,
+      storage: authStorage,
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,

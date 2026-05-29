@@ -9,6 +9,7 @@ import { RevenueCatBootstrap } from '@/components/common/RevenueCatBootstrap';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { SkinProvider } from '@/contexts/SkinContext';
 import { bridgeKindeToSupabase } from '@/services/auth.service';
+import { logger } from '@/lib/logger';
 
 const extra = Constants.expoConfig?.extra as Record<string, string | undefined> | undefined;
 
@@ -38,7 +39,7 @@ export default function RootLayout() {
               await bridgeKindeToSupabase(accessToken);
             }
           } catch (e) {
-            console.error('[Kinde] bridge after OAuth failed:', e);
+            logger.error('Kinde', 'bridge after OAuth failed', e);
           }
         },
       }}

@@ -1,8 +1,8 @@
 /**
  * @kinde/js-utils loads ExpoSecureStore via dynamic import(), which Metro/RN
- * often resolves to undefined. Use AsyncStorage instead (no native secure-store).
+ * often resolves to undefined. Patch it to use expo-secure-store directly.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import {
   ExpoSecureStore as kindeExpoSecureStoreExport,
   SessionBase,
@@ -31,7 +31,7 @@ class KindeAsyncStorage extends SessionBase {
     await this.removeSessionItem(itemKey);
     const chunks = splitString(itemValue, Math.min(storageSettings.maxLength, 2048));
     await Promise.all(
-      chunks.map((chunk, index) => AsyncStorage.setItem(this.key(itemKey, index), chunk)),
+      chunks.map((chunk, index) => SecureStore.setItemAsync(this.key(itemKey, index), chunk)),
     );
     this.notifyListeners();
   }
@@ -39,22 +39,22 @@ class KindeAsyncStorage extends SessionBase {
   async getSessionItem(itemKey: string): Promise<string | null> {
     const chunks: string[] = [];
     let index = 0;
-    let chunk = await AsyncStorage.getItem(this.key(String(itemKey), index));
+    let chunk = await SecureStore.getItemAsync(this.key(String(itemKey), index));
     while (chunk) {
       chunks.push(chunk);
       index += 1;
-      chunk = await AsyncStorage.getItem(this.key(String(itemKey), index));
+      chunk = await SecureStore.getItemAsync(this.key(String(itemKey), index));
     }
     return chunks.join('') || null;
   }
 
   async removeSessionItem(itemKey: string): Promise<void> {
     let index = 0;
-    let chunk = await AsyncStorage.getItem(this.key(String(itemKey), index));
+    let chunk = await SecureStore.getItemAsync(this.key(String(itemKey), index));
     while (chunk) {
-      await AsyncStorage.removeItem(this.key(String(itemKey), index));
+      await SecureStore.deleteItemAsync(this.key(String(itemKey), index));
       index += 1;
-      chunk = await AsyncStorage.getItem(this.key(String(itemKey), index));
+      chunk = await SecureStore.getItemAsync(this.key(String(itemKey), index));
     }
     this.notifyListeners();
   }

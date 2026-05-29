@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import type { PurchasesPackage } from 'react-native-purchases';
+import { logger } from '@/lib/logger';
 
 const extra = Constants.expoConfig?.extra as Record<string, string | undefined> | undefined;
 
@@ -63,18 +64,18 @@ export async function initPurchases(): Promise<void> {
           message.includes('ITEM_ALREADY_OWNED') ||
           message.includes('already active')
         ) {
-          console.log('[Purchases]', message);
+          logger.log('Purchases', message);
           return;
         }
-        if (level === LOG_LEVEL.ERROR) console.error('[Purchases]', message);
-        else if (level === LOG_LEVEL.WARN) console.warn('[Purchases]', message);
-        else console.log('[Purchases]', message);
+        if (level === LOG_LEVEL.ERROR) logger.error('Purchases', message);
+        else if (level === LOG_LEVEL.WARN) logger.warn('Purchases', message);
+        else logger.log('Purchases', message);
       });
     }
     await Purchases.configure({ apiKey });
     initialized = true;
   } catch (e) {
-    console.warn('[Purchases] init failed', e);
+    logger.warn('Purchases', 'init failed', e);
   }
 }
 
@@ -88,7 +89,7 @@ export async function identifyUser(userId: string): Promise<void> {
     const Purchases = await getPurchasesModule();
     await Purchases.logIn(userId);
   } catch (e) {
-    console.warn('[Purchases] logIn failed', e);
+    logger.warn('Purchases', 'logIn failed', e);
   }
 }
 
@@ -98,7 +99,7 @@ export async function logOutPurchases(): Promise<void> {
     const Purchases = await getPurchasesModule();
     await Purchases.logOut();
   } catch (e) {
-    console.warn('[Purchases] logOut failed', e);
+    logger.warn('Purchases', 'logOut failed', e);
   }
 }
 
@@ -117,7 +118,7 @@ export async function getCustomerInfo(): Promise<CustomerInfo | null> {
     const info = await Purchases.getCustomerInfo();
     return info as unknown as CustomerInfo;
   } catch (e) {
-    console.warn('[Purchases] getCustomerInfo failed', e);
+    logger.warn('Purchases', 'getCustomerInfo failed', e);
     return null;
   }
 }
@@ -177,7 +178,7 @@ export async function getRevenueCatPremiumSnapshot(): Promise<RevenueCatPremiumS
       willRenew,
     };
   } catch (e) {
-    console.warn('[Purchases] getRevenueCatPremiumSnapshot failed', e);
+    logger.warn('Purchases', 'getRevenueCatPremiumSnapshot failed', e);
     return EMPTY_RC_SNAPSHOT;
   }
 }
@@ -265,7 +266,7 @@ export async function refreshCustomerInfoFromStore(): Promise<void> {
     await Purchases.getCustomerInfo();
   } catch (e) {
     if (!isProductAlreadyOwnedError(e)) {
-      console.warn('[Purchases] refreshCustomerInfoFromStore failed', e);
+      logger.warn('Purchases', 'refreshCustomerInfoFromStore failed', e);
     }
   }
 }
@@ -293,7 +294,7 @@ export async function presentPaywall(): Promise<PaywallResult> {
     await refreshCustomerInfoFromStore();
     const normalized = await normalizePaywallResult('ERROR');
     if (normalized === 'PURCHASED') return normalized;
-    console.warn('[Purchases] presentPaywall failed', e);
+    logger.warn('Purchases', 'presentPaywall failed', e);
     return 'ERROR';
   }
 }
@@ -319,7 +320,7 @@ export async function presentPaywallIfNeeded(): Promise<{ presented: boolean; re
     await refreshCustomerInfoFromStore();
     const result = await normalizePaywallResult('ERROR');
     if (result === 'PURCHASED') return { presented: false, result };
-    console.warn('[Purchases] presentPaywallIfNeeded failed', e);
+    logger.warn('Purchases', 'presentPaywallIfNeeded failed', e);
     return { presented: false, result: 'ERROR' };
   }
 }
@@ -346,7 +347,7 @@ export async function presentCustomerCenter(): Promise<CustomerCenterResult> {
       },
     });
   } catch (e) {
-    console.warn('[Purchases] presentCustomerCenter failed', e);
+    logger.warn('Purchases', 'presentCustomerCenter failed', e);
     return { action: 'DISMISSED' };
   }
 
