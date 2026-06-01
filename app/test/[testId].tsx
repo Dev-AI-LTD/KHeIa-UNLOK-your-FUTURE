@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Share,
   Linking,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +25,9 @@ import {
 import { parseTestId, createTestRecord } from '@/services/test.service';
 import { getOfficialTestById } from '@/services/official-tests.service';
 import { buildTestShareMessage } from '@/services/deep-linking.service';
+import { FREE_TESTS_LIMIT } from '@/services/subscription.service';
+import { isRevenueCatConfigured, presentPaywall } from '@/services/purchases.service';
+import { refreshSubscriptionAfterPurchase } from '@/services/subscription.service';
 
 const QUESTION_COUNT = 20;
 
@@ -60,17 +64,40 @@ export default function TestSessionScreen() {
         return;
       }
 
-      const q = await fetchExamTestQuestions(parsed.subjectId, QUESTION_COUNT);
-      setQuestions(q);
-
       if (user?.id) {
-        const { testId: tid } = await createTestRecord({
+        const { testId: tid, limitReached } = await createTestRecord({
           userId: user.id,
           examType: parsed.examType,
           subjectId: parsed.subjectId,
         });
+        if (limitReached) {
+          setLoading(false);
+          Alert.alert(
+            'KHEYA Pro',
+            `Planul gratuit include ${FREE_TESTS_LIMIT} test. Deblochează KHEYA Pro pentru teste nelimitate.`,
+            [
+              { text: 'Înapoi', onPress: () => router.back() },
+              {
+                text: 'Vezi abonamente',
+                onPress: () => {
+                  void (async () => {
+                    if (!isRevenueCatConfigured()) return;
+                    const result = await presentPaywall();
+                    if (result === 'PURCHASED' || result === 'RESTORED') {
+                      await refreshSubscriptionAfterPurchase(user.id);
+                    }
+                  })();
+                },
+              },
+            ],
+          );
+          return;
+        }
         setDbTestId(tid ?? null);
       }
+
+      const q = await fetchExamTestQuestions(parsed.subjectId, QUESTION_COUNT);
+      setQuestions(q);
 
       setLoading(false);
     };

@@ -15,6 +15,11 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
 import { getOfficialExamTests } from '@/services/official-tests.service';
 import type { TestSourceType } from '@/types/tests';
+import { supabase } from '@/services/supabase';
+import { canUserStartTest } from '@/services/test.service';
+import { FREE_TESTS_LIMIT } from '@/services/subscription.service';
+import { isRevenueCatConfigured, presentPaywall } from '@/services/purchases.service';
+import { refreshSubscriptionAfterPurchase } from '@/services/subscription.service';
 
 const logoBg = require('../../assets/kheia beckground.png');
 const YEARS = [2026, 2025, 2024, 2023, 2022];
@@ -42,7 +47,39 @@ export default function GenerateQuizScreen() {
     }
   }, [sourceType, subjectId, subjectsForSource]);
 
-  const handleGenerateTest = () => {
+  const handleGenerateTest = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user?.id) {
+      Alert.alert('Autentificare', 'Conectează-te pentru a începe un test.');
+      router.push('/(auth)/login');
+      return;
+    }
+    const allowed = await canUserStartTest(user.id);
+    if (!allowed) {
+      Alert.alert(
+        'KHEYA Pro',
+        `Planul gratuit include ${FREE_TESTS_LIMIT} test. Deblochează KHEYA Pro pentru teste nelimitate.`,
+        [
+          { text: 'Anulare', style: 'cancel' },
+          {
+            text: 'Vezi abonamente',
+            onPress: () => {
+              void (async () => {
+                if (!isRevenueCatConfigured()) return;
+                const result = await presentPaywall();
+                if (result === 'PURCHASED' || result === 'RESTORED') {
+                  await refreshSubscriptionAfterPurchase(user.id);
+                }
+              })();
+            },
+          },
+        ],
+      );
+      return;
+    }
+
     if (sourceType === 'GENERATED') {
       if (!subjectId) {
         Alert.alert('Selectează materia', 'Alege o materie pentru test.');

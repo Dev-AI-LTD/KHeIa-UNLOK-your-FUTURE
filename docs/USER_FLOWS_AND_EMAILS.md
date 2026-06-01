@@ -2,7 +2,18 @@
 
 Detalii despre ce se întâmplă la login, înregistrare, resetare parolă și abonament: de la cine primesc utilizatorii emailuri și unde ajung în app după fiecare acțiune.
 
-**Autentificare actuală:** doar **email + parolă** prin **Kinde** (hosted UI). **Nu** există login social (Google / Apple / Facebook) în app sau în Kinde.
+**Autentificare actuală:** doar **email + parolă** prin **Kinde** (hosted UI). **Nu** există login social (Google / Apple / Facebook) în app sau în Kinde. **Login obligatoriu** — fără cont nu se accesează app-ul (redirect la login).
+
+## Plan FREE vs KHEYA Pro
+
+| Funcție | FREE | Pro (plată) |
+|--------|------|-------------|
+| Capitole per materie | Primele 2 | Toate |
+| Quiz pe capitol | 5 întrebări | 10 întrebări |
+| Teste EN/BAC | 1 test total | Nelimitat |
+| Ascultare teorie | 5 min/zi | Nelimitat |
+
+**Când apare paywall:** capitol 3+, al 2-lea test, TTS epuizat, după quiz free, Profil → Deblochează KHEYA Pro. Plata = RevenueCat + Google Play / App Store.
 
 ---
 

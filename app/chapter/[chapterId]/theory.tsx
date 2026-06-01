@@ -11,6 +11,10 @@ import { useChapterAudio } from '@/hooks/useChapterAudio';
 import { isTtsAvailable } from '@/services/tts.client';
 import { useSubscription } from '@/hooks/useSubscription';
 import {
+  canAccessChapter,
+  FREE_CHAPTERS_PER_SUBJECT,
+} from '@/services/subscription.service';
+import {
   formatTtsRemaining,
   getTtsRemainingSecondsToday,
   FREE_TTS_DAILY_SECONDS,
@@ -33,7 +37,7 @@ export default function ChapterTheoryScreen() {
   const { chapters: chaptersData, chapterDetails: chapterDetailsData, loading } = useCatalogContext();
   const [generatedChapters, setGeneratedChapters] = useState<typeof chaptersData>([]);
   const [generatedTheory, setGeneratedTheoryState] = useState<string[] | null>(null);
-  const { isPremium, refreshAfterPurchase } = useSubscription();
+  const { status, isPremium, refreshAfterPurchase } = useSubscription();
   const { progress, isActive, isPaused, error, startListening, stopOrPause, togglePause, stop } =
     useChapterAudio();
   const [ttsRemainingSec, setTtsRemainingSec] = useState(FREE_TTS_DAILY_SECONDS);
@@ -90,6 +94,26 @@ export default function ChapterTheoryScreen() {
   const chapter =
     chaptersData.find((c) => c.id === chapterId) ??
     generatedChapters.find((c) => c.id === chapterId);
+
+  useEffect(() => {
+    if (!chapter || !status) return;
+    const chapterOrder = chapter.order ?? 1;
+    void (async () => {
+      const allowed =
+        isPremium ||
+        (await hasProEntitlement()) ||
+        canAccessChapter(chapter.subject_id, chapterOrder, status);
+      if (allowed) return;
+      Alert.alert(
+        'KHEYA Pro',
+        `Planul gratuit include primele ${FREE_CHAPTERS_PER_SUBJECT} capitole per materie. Deblochează KHEYA Pro pentru acces complet.`,
+        [
+          { text: 'Înapoi', onPress: () => router.back() },
+          { text: 'Vezi abonamente', onPress: () => void openPremiumPaywall() },
+        ],
+      );
+    })();
+  }, [chapter, status, isPremium, router, openPremiumPaywall]);
 
   const details = chapterDetailsData.find((d) => d.chapter_id === chapterId);
   const theoryEntry = chapterTheoryData.find((t) => t.chapter_id === chapterId);

@@ -30,6 +30,36 @@ Deno.serve(async (req) => {
   const supabase = getSupabaseClient();
   const backendUrl = Deno.env.get('NODE_BACKEND_URL') ?? '';
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('subscription_type, referral_premium_until')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const planType = (profile?.subscription_type as string) ?? 'free';
+  const referralUntil = profile?.referral_premium_until as string | null;
+  const referralActive = referralUntil && new Date(referralUntil) > new Date();
+  const premium = planType !== 'free' || referralActive;
+
+  if (!premium) {
+    const { count } = await supabase
+      .from('tests')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+    if ((count ?? 0) >= 1) {
+      return new Response(
+        JSON.stringify({
+          error: 'Free limit reached. Upgrade to Pro.',
+          limit_reached: true,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403,
+        },
+      );
+    }
+  }
+
   if (!backendUrl) {
     return new Response(JSON.stringify({ error: 'Backend not configured' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -46,27 +76,6 @@ Deno.serve(async (req) => {
     const payload = await backendRes.json();
 
     if (backendRes.ok) {
-      // For non-premium users, verify they still haven't exceeded limit (race condition protection)
-      if (!premium) {
-        const { count } = await supabase
-          .from('tests')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-        
-        if ((count ?? 0) >= 1) {
-          // Race condition: user already has a test from another request
-          // Block the result to prevent abuse
-          return new Response(JSON.stringify({ 
-            error: 'Free limit reached. Upgrade to Pro.',
-            limit_reached: true
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 403,
-          });
-        }
-      }
-
-      // Only insert test record if limit check passed
       await supabase.from('tests').insert({
         user_id: user.id,
         type: body.exam_type as string,

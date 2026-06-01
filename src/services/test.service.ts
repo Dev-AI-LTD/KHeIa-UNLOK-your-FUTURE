@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { canStartTest, getSubscriptionStatus } from './subscription.service';
 
 /**
  * Parse testId (ex: en-subj-en-romana, bac-subj-bac-matematica-real) into exam type and subject id.
@@ -11,14 +12,30 @@ export const parseTestId = (testId: string): { examType: 'EN' | 'Bac'; subjectId
   return null;
 };
 
+/** Verifică dacă userul poate începe un test nou (limita free: 1 test total). */
+export async function canUserStartTest(userId: string): Promise<boolean> {
+  const status = await getSubscriptionStatus(userId);
+  return canStartTest(userId, status);
+}
+
 /**
  * Creates a test record when starting an exam.
+ * Returns limitReached when free user already used their one test.
  */
 export const createTestRecord = async (params: {
   userId: string;
   examType: 'EN' | 'Bac';
   subjectId: string;
 }) => {
+  const allowed = await canUserStartTest(params.userId);
+  if (!allowed) {
+    return {
+      testId: null as string | null,
+      error: new Error('FREE_TEST_LIMIT'),
+      limitReached: true,
+    };
+  }
+
   const { data, error } = await supabase
     .from('tests')
     .insert({
@@ -29,7 +46,7 @@ export const createTestRecord = async (params: {
     })
     .select('id')
     .single();
-  return { testId: data?.id as string | null, error };
+  return { testId: data?.id as string | null, error, limitReached: false };
 };
 
 /**

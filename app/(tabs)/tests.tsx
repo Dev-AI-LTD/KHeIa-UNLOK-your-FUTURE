@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { colors, spacing, typography, ios } from '@/theme';
@@ -9,6 +9,11 @@ import { getGeneratedChapters } from '@/lib/chapterStorage';
 import { getOfficialExamTests } from '@/services/official-tests.service';
 import { getOnboardingExam } from '@/lib/onboardingStorage';
 import type { ExamType } from '@/types/tests';
+import { supabase } from '@/services/supabase';
+import { canUserStartTest } from '@/services/test.service';
+import { FREE_TESTS_LIMIT } from '@/services/subscription.service';
+import { isRevenueCatConfigured, presentPaywall } from '@/services/purchases.service';
+import { refreshSubscriptionAfterPurchase } from '@/services/subscription.service';
 
 const YEARS = [2026, 2025, 2024, 2023, 2022];
 
@@ -54,10 +59,41 @@ export default function TestsScreen() {
   );
 
   const handleTestPress = useCallback(
-    (targetTestId: string) => {
+    async (targetTestId: string) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user?.id) {
+        Alert.alert('Autentificare', 'Conectează-te pentru a începe un test.');
+        router.push('/(auth)/login');
+        return;
+      }
+      const allowed = await canUserStartTest(user.id);
+      if (!allowed) {
+        Alert.alert(
+          'KHEYA Pro',
+          `Planul gratuit include ${FREE_TESTS_LIMIT} test. Deblochează KHEYA Pro pentru teste nelimitate.`,
+          [
+            { text: 'Anulare', style: 'cancel' },
+            {
+              text: 'Vezi abonamente',
+              onPress: () => {
+                void (async () => {
+                  if (!isRevenueCatConfigured()) return;
+                  const result = await presentPaywall();
+                  if (result === 'PURCHASED' || result === 'RESTORED') {
+                    await refreshSubscriptionAfterPurchase(user.id);
+                  }
+                })();
+              },
+            },
+          ],
+        );
+        return;
+      }
       router.push(`/test/${targetTestId}`);
     },
-    [router]
+    [router],
   );
 
   if (loading) {

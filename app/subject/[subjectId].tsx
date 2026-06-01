@@ -1,22 +1,70 @@
 import { useState, useCallback } from 'react';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, radius, sizes, iosText } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getGeneratedChapters } from '@/lib/chapterStorage';
 import { useCatalogContext } from '@/components/common/CatalogProvider';
+import { useSubscription } from '@/hooks/useSubscription';
+import { canAccessChapter, FREE_CHAPTERS_PER_SUBJECT } from '@/services/subscription.service';
+import {
+  hasProEntitlement,
+  isRevenueCatConfigured,
+  presentPaywall,
+} from '@/services/purchases.service';
+
 export default function SubjectDetailScreen() {
   const { subjectId } = useLocalSearchParams<{ subjectId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { subjects, chapters: chaptersData, loading } = useCatalogContext();
+  const { status, isPremium, refreshAfterPurchase } = useSubscription();
   const [generatedChapters, setGeneratedChapters] = useState<typeof chaptersData>([]);
 
   useFocusEffect(
     useCallback(() => {
       getGeneratedChapters().then(setGeneratedChapters);
     }, [])
+  );
+
+  const openPremiumPaywall = useCallback(async () => {
+    if (!isRevenueCatConfigured()) {
+      Alert.alert(
+        'KHEYA Pro',
+        'Abonamentele se activează prin magazinul de aplicații. Verifică configurarea RevenueCat.',
+      );
+      return;
+    }
+    if (await hasProEntitlement()) {
+      await refreshAfterPurchase();
+      return;
+    }
+    const result = await presentPaywall();
+    if (result === 'PURCHASED' || result === 'RESTORED') {
+      await refreshAfterPurchase();
+    }
+  }, [refreshAfterPurchase]);
+
+  const handleChapterPress = useCallback(
+    async (chapterId: string, chapterOrder: number) => {
+      if (!status) return;
+      const allowed =
+        isPremium || (await hasProEntitlement()) || canAccessChapter(subjectId ?? '', chapterOrder, status);
+      if (allowed) {
+        router.push(`/chapter/${chapterId}/theory`);
+        return;
+      }
+      Alert.alert(
+        'KHEYA Pro',
+        `Planul gratuit include primele ${FREE_CHAPTERS_PER_SUBJECT} capitole per materie. Deblochează KHEYA Pro pentru acces complet.`,
+        [
+          { text: 'Anulare', style: 'cancel' },
+          { text: 'Vezi abonamente', onPress: () => void openPremiumPaywall() },
+        ],
+      );
+    },
+    [status, isPremium, subjectId, router, openPremiumPaywall],
   );
 
   const subject = subjects.find((s) => s.id === subjectId);
@@ -66,6 +114,11 @@ export default function SubjectDetailScreen() {
 
       <Text style={styles.sectionTitle}>Capitole</Text>
       <Text style={styles.programNote}>Ordinea conform programei școlare din România</Text>
+      {!isPremium && status ? (
+        <Text style={styles.freeHint}>
+          Plan gratuit: primele {FREE_CHAPTERS_PER_SUBJECT} capitole per materie sunt deblocate.
+        </Text>
+      ) : null}
       <Pressable
         onPress={() => router.push(`/subject/${subjectId}/generate-chapter`)}
         style={({ pressed }) => [styles.generateBtn, pressed && styles.generateBtnPressed]}
@@ -84,26 +137,38 @@ export default function SubjectDetailScreen() {
         </View>
       ) : (
       <View style={styles.chapterList}>
-        {allChapters.map((chapter, index) => (
+        {allChapters.map((chapter, index) => {
+          const chapterOrder = chapter.order > 0 ? chapter.order : index + 1;
+          const locked =
+            status != null && !isPremium && !canAccessChapter(subjectId ?? '', chapterOrder, status);
+          return (
             <Pressable
               key={chapter.id}
-              onPress={() => router.push(`/chapter/${chapter.id}/theory`)}
+              onPress={() => void handleChapterPress(chapter.id, chapterOrder)}
               style={({ pressed }) => [
                 styles.chapterPressable,
                 pressed && styles.chapterPressed,
+                locked && styles.chapterLocked,
               ]}
               accessibilityRole="button"
-              accessibilityLabel={`Capitol ${index + 1}: ${chapter.title}`}
+              accessibilityLabel={`Capitol ${chapterOrder}: ${chapter.title}${locked ? ', blocat' : ''}`}
             >
               <GlassCard dark intensity={14} style={styles.chapterCard}>
                 <View style={styles.chapterNumberBadge}>
-                  <Text style={styles.chapterNumber}>{index + 1}</Text>
+                  <Text style={styles.chapterNumber}>{chapterOrder}</Text>
                 </View>
                 <Text style={styles.chapterTitle}>{chapter.title}</Text>
-                <Text style={styles.chapterArrow}>→</Text>
+                {locked ? (
+                  <View style={styles.lockedBadge}>
+                    <Text style={styles.lockedBadgeText}>Pro</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.chapterArrow}>→</Text>
+                )}
               </GlassCard>
             </Pressable>
-        ))}
+          );
+        })}
       </View>
       )}
     </ScrollView>
@@ -157,8 +222,14 @@ const styles = StyleSheet.create({
   programNote: {
     ...iosText('subhead'),
     color: colors.dark.muted,
-    marginBottom: spacing.fieldGap,
+    marginBottom: spacing.xs,
     fontStyle: 'italic',
+    textAlign: 'left',
+  },
+  freeHint: {
+    ...iosText('footnote'),
+    color: colors.dark.muted,
+    marginBottom: spacing.fieldGap,
     textAlign: 'left',
   },
   generateBtn: { marginBottom: spacing.fieldGap, minHeight: sizes.touchTarget },
