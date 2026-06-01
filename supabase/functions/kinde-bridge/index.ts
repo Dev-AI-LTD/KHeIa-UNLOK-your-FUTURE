@@ -17,6 +17,46 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   });
 }
 
+const REVIEW_PREMIUM_UNTIL = '2099-12-31T23:59:59.000Z';
+
+function parseReviewEmails(): string[] {
+  return (Deno.env.get('REVIEW_ACCOUNT_EMAILS') ?? 'apple.review@kheia.ro')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+async function grantReviewPremium(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  displayName: string,
+): Promise<void> {
+  await admin
+    .from('subscriptions')
+    .update({ status: 'expired', updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('status', 'active');
+
+  await admin.from('subscriptions').insert({
+    user_id: userId,
+    plan_type: 'full_edumat',
+    status: 'active',
+    current_period_end: REVIEW_PREMIUM_UNTIL,
+    updated_at: new Date().toISOString(),
+  });
+
+  await admin.from('profiles').upsert(
+    {
+      id: userId,
+      display_name: displayName,
+      subscription_type: 'full_edumat',
+      referral_premium_until: REVIEW_PREMIUM_UNTIL,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'id' },
+  );
+}
+
 async function mintSupabaseSession(
   supabaseUrl: string,
   serviceKey: string,
@@ -141,6 +181,8 @@ Deno.serve(async (req) => {
   }
 
   const existing = listed.users.find((u) => u.email?.toLowerCase() === email);
+  let supabaseUserId = existing?.id;
+
   if (!existing) {
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email,
@@ -152,6 +194,15 @@ Deno.serve(async (req) => {
     });
     if (createError || !created.user) {
       return jsonResponse({ error: createError?.message ?? 'Nu s-a putut crea utilizatorul' }, 500);
+    }
+    supabaseUserId = created.user.id;
+  }
+
+  if (supabaseUserId && parseReviewEmails().includes(email)) {
+    try {
+      await grantReviewPremium(admin, supabaseUserId, displayName);
+    } catch (e) {
+      console.error('grantReviewPremium failed:', e);
     }
   }
 

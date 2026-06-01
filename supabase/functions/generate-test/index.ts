@@ -39,7 +39,15 @@ Deno.serve(async (req) => {
   const planType = (profile?.subscription_type as string) ?? 'free';
   const referralUntil = profile?.referral_premium_until as string | null;
   const referralActive = referralUntil && new Date(referralUntil) > new Date();
-  const premium = planType !== 'free' || referralActive;
+
+  const reviewEmails = (Deno.env.get('REVIEW_ACCOUNT_EMAILS') ?? 'apple.review@kheia.ro')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const email = user.email?.toLowerCase() ?? '';
+  const isReviewAccount = reviewEmails.includes(email);
+
+  const premium = isReviewAccount || planType !== 'free' || referralActive;
 
   if (!premium) {
     const { count } = await supabase

@@ -1,6 +1,10 @@
-# Cont de review (email + parolă) – unde și cum în Supabase
+# Cont de review (email + parolă) – Premium în Supabase
 
-În Supabase **nu există** un câmp separat „email/parolă pentru review”. Contul de test îl **creezi** ca utilizator în Authentication; emailul și parola pe care le setezi acolo sunt exact cele pe care le treci în Google Play Console.
+**Autentificarea** este prin **Kinde** (email + parolă), nu direct în Supabase Auth UI.
+
+Ghid complet (Kinde + Premium + App Store Connect): **`docs/APPLE_REVIEW_ACCOUNT.md`**.
+
+Mai jos: cum acorzi Premium manual în Supabase dacă ai nevoie (după ce userul s-a logat cel puțin o dată).
 
 ---
 

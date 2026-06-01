@@ -1,9 +1,24 @@
+import { isReviewAccountEmail } from '@/lib/reviewAccounts';
 import { supabase } from './supabase';
 import {
   getRevenueCatPremiumSnapshot,
   isRevenueCatConfigured,
   planTypeFromRevenueCatProduct,
 } from './purchases.service';
+
+/** Premium acordat manual în Supabase (review, admin) — nu îl șterge sync-ul RevenueCat. */
+export async function hasSupabaseGrantedPremium(userId: string): Promise<boolean> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('subscription_type, referral_premium_until')
+    .eq('id', userId)
+    .maybeSingle();
+
+  const planType = (profile?.subscription_type as PlanType) ?? 'free';
+  const referralUntil = profile?.referral_premium_until as string | null;
+  const referralActive = referralUntil && new Date(referralUntil) > new Date();
+  return planType !== 'free' || !!referralActive;
+}
 
 export type PlanType = 'free' | 'monthly' | 'yearly' | 'full_edumat';
 
@@ -47,6 +62,10 @@ export async function getSubscriptionStatus(userId: string | null): Promise<Subs
     };
   }
 
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('subscription_type, referral_premium_until')
@@ -59,7 +78,10 @@ export async function getSubscriptionStatus(userId: string | null): Promise<Subs
   const now = new Date();
   const referralActive = referralPremiumUntil && new Date(referralPremiumUntil) > now;
 
-  const isPremium = planType !== 'free' || referralActive;
+  const reviewAccount =
+    authUser?.id === userId && isReviewAccountEmail(authUser.email ?? undefined);
+
+  const isPremium = reviewAccount || planType !== 'free' || referralActive;
 
   const { data: sub } = await supabase
     .from('subscriptions')
@@ -90,18 +112,20 @@ export async function getSubscriptionStatus(userId: string | null): Promise<Subs
   }
 
   const premium = isPremium || !!paidActive || rcPremium;
-  const resolvedPlan: PlanType = rcPremium
-    ? (rcPlanType ?? 'monthly')
-    : paidActive
-      ? planType !== 'free'
-        ? planType
-        : 'monthly'
-      : referralActive
-        ? 'monthly'
-        : planType;
+  const resolvedPlan: PlanType = reviewAccount
+    ? 'full_edumat'
+    : rcPremium
+      ? (rcPlanType ?? 'monthly')
+      : paidActive
+        ? planType !== 'free'
+          ? planType
+          : 'monthly'
+        : referralActive
+          ? 'monthly'
+          : planType;
 
   return {
-    isPremium: premium,
+    isPremium: premium || reviewAccount,
     planType: resolvedPlan,
     currentPeriodEnd: rcPeriodEnd ?? periodEnd,
     referralPremiumUntil,
@@ -137,8 +161,18 @@ export async function expireSubscription(userId: string): Promise<{ success: boo
 export async function syncSubscriptionStateFromRevenueCat(userId: string): Promise<boolean> {
   if (!userId || !isRevenueCatConfigured()) return false;
 
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+  if (authUser?.id === userId && isReviewAccountEmail(authUser.email ?? undefined)) {
+    return true;
+  }
+
   const rc = await getRevenueCatPremiumSnapshot();
   if (!rc.isPremium) {
+    if (await hasSupabaseGrantedPremium(userId)) {
+      return true;
+    }
     await expireSubscription(userId);
     return false;
   }
