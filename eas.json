@@ -29,5 +29,18 @@
         "NODE_OPTIONS": "--max-old-space-size=4096"
       }
     }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6774581226",
+        "appleId": "contact@devaieood.com",
+        "appleTeamId": "3L7H3SZXM3",
+        "bundleIdentifier": "com.kheia.edumat",
+        "ascApiKeyPath": "./secrets/asc-api-key.p8",
+        "ascApiKeyId": "K779WAKLX9",
+        "ascApiKeyIssuerId": "29f29a6b-929c-4bc7-98b3-7e6d224f9627"
+      }
+    }
   }
 }
