@@ -59,7 +59,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.kheia.edumat",
-      "buildNumber": "12",
+      "buildNumber": "13",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
