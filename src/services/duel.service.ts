@@ -15,6 +15,16 @@ export type DuelSession = {
   expires_at: string | null;
 };
 
+const INVITE_CODE_REGEX = /^[A-Z0-9]{4,12}$/;
+
+function normalizeInviteCode(code: string): string {
+  return code.toUpperCase().trim();
+}
+
+export function isValidInviteCode(inviteCode: string): boolean {
+  return INVITE_CODE_REGEX.test(normalizeInviteCode(inviteCode));
+}
+
 /**
  * Creates a duel session and returns the session ID plus invitation link.
  */
@@ -66,10 +76,13 @@ export async function joinDuelByCode(
   opponentId: string,
   inviteCode: string
 ): Promise<{ success: boolean; sessionId?: string; error?: string }> {
+  if (!isValidInviteCode(inviteCode)) {
+    return { success: false, error: 'Cod invalid.' };
+  }
   const { data: session, error: findErr } = await supabase
     .from('duel_sessions')
     .select('id, creator_id, status, expires_at')
-    .eq('invite_code', inviteCode.toUpperCase().trim())
+    .eq('invite_code', normalizeInviteCode(inviteCode))
     .maybeSingle();
 
   if (findErr || !session) {

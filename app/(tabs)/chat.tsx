@@ -42,6 +42,8 @@ export default function ChatScreen() {
     errorTitle,
     postMessage,
     refresh,
+    onMessageLongPress,
+    showCommunityGuidelines,
   } = useGlobalChat();
 
   const scrollToEnd = useCallback(() => {
@@ -111,6 +113,7 @@ export default function ChatScreen() {
       <ChatHeader
         roomName={activeRoom?.name ?? 'Global Chat'}
         connectionStatus={connectionStatus}
+        onPressGuidelines={showCommunityGuidelines}
       />
       <OnlineUsersBar users={onlineUsers} />
 
@@ -137,7 +140,9 @@ export default function ChatScreen() {
           ref={listRef}
           data={messages}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <MessageBubble message={item} />}
+          renderItem={({ item }) => (
+            <MessageBubble message={item} onLongPress={onMessageLongPress} />
+          )}
           contentContainerStyle={{
             paddingTop: spacing.md,
             paddingBottom: keyboardHeight > 0 ? spacing.lg : spacing.md,

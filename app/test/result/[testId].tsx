@@ -7,7 +7,7 @@ import { useCatalogContext } from '@/components/common/CatalogProvider';
 import { supabase } from '@/services/supabase';
 import { onTestFinished } from '@/services/progress-events.service';
 import { buildTestResultShareText } from '@/services/gamification.service';
-import { parseTestId } from '@/services/test.service';
+import { isValidTestIdParam, parseTestId } from '@/services/test.service';
 import { getOfficialTestById } from '@/services/official-tests.service';
 
 export default function TestResultScreen() {
@@ -25,11 +25,12 @@ export default function TestResultScreen() {
   const coins = Math.floor(20 + (score / 100) * 30);
   const xpGained = correct * 10;
 
-  const officialTest = testId ? getOfficialTestById(String(testId)) : null;
+  const rawTestId = String(testId ?? '');
+  const officialTest = rawTestId ? getOfficialTestById(rawTestId) : null;
   const parsed = officialTest
     ? { subjectId: officialTest.subjectId }
-    : testId
-      ? parseTestId(String(testId))
+    : rawTestId && isValidTestIdParam(rawTestId)
+      ? parseTestId(rawTestId)
       : null;
   const subjectName = parsed?.subjectId
     ? subjects.find((s) => s.id === parsed.subjectId)?.name

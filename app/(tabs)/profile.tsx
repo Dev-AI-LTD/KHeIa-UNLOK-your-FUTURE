@@ -25,6 +25,11 @@ import { XPBar } from '@/components/gamification/XPBar';
 import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
 import { StreakCounter } from '@/components/gamification/StreakCounter';
 import { GDPR_TEXT, PRIVACY_POLICY_TEXT, TERMS_TEXT } from '@/content/legal';
+import {
+  getPrivacyPolicyUrl,
+  getTermsUrl,
+  openLegalUrl,
+} from '@/lib/legalUrls';
 import { useKindeAuth } from '@kinde/expo';
 import { signOutSupabase, deleteAccount } from '@/services/auth.service';
 import { getKindeAuthOptions } from '@/lib/kindeConfig';
@@ -609,8 +614,51 @@ export default function ProfileScreen() {
     </View>
   );
 
+  const privacyUrl = getPrivacyPolicyUrl();
+  const termsUrl = getTermsUrl();
+
+  const openPrivacyOnline = () => {
+    if (!privacyUrl) {
+      Alert.alert('Indisponibil', 'URL-ul politicii nu este configurat în build.');
+      return;
+    }
+    void openLegalUrl(privacyUrl, 'politica de confidențialitate').catch((e: unknown) => {
+      const msg = e instanceof Error ? e.message : 'Nu s-a putut deschide linkul.';
+      Alert.alert('Eroare', msg);
+    });
+  };
+
+  const openTermsOnline = () => {
+    if (!termsUrl) {
+      Alert.alert('Indisponibil', 'URL-ul termenilor nu este configurat în build.');
+      return;
+    }
+    void openLegalUrl(termsUrl, 'termenii și condițiile').catch((e: unknown) => {
+      const msg = e instanceof Error ? e.message : 'Nu s-a putut deschide linkul.';
+      Alert.alert('Eroare', msg);
+    });
+  };
+
   const renderLegalTab = () => (
     <View style={styles.legalSection}>
+      <View style={styles.legalLinks}>
+        {privacyUrl ? (
+          <IOSListRow
+            title="Politica de confidențialitate (online)"
+            subtitle={privacyUrl}
+            icon="shield-checkmark-outline"
+            onPress={openPrivacyOnline}
+          />
+        ) : null}
+        {termsUrl ? (
+          <IOSListRow
+            title="Termeni și condiții (online)"
+            subtitle={termsUrl}
+            icon="document-text-outline"
+            onPress={openTermsOnline}
+          />
+        ) : null}
+      </View>
       <StyledTabs tabs={LEGAL_TABS} activeId={legalTab} onChange={setLegalTab} fullWidth />
       <View style={styles.legalContent}>
         <Text style={styles.legalText}>{LEGAL_CONTENT[legalTab]}</Text>
@@ -1085,6 +1133,10 @@ const styles = StyleSheet.create({
     ...iosText('caption2'),
     fontWeight: '700',
     color: '#fff',
+  },
+  legalLinks: {
+    marginBottom: spacing.md,
+    gap: spacing.xs,
   },
   legalSection: {
     marginTop: spacing.sm,

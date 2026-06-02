@@ -14,7 +14,7 @@ import {
   Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getChatApiUrl } from '@/lib/nodeBackendUrl';
+import { supabase } from '@/services/supabase';
 import { spacing, radius, sizes, iosText } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 
@@ -133,41 +133,27 @@ export default function KheiaScreen() {
     setLoading(true);
 
     try {
-      const CHAT_API = getChatApiUrl();
-      if (CHAT_API) {
-        const history = [...messages, userMsg].map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
-        const res = await fetch(CHAT_API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: history }),
-        });
-        if (!res.ok) {
-          let errMsg = `Eroare server (${res.status}). Încearcă din nou.`;
-          try {
-            const errBody = (await res.json()) as { message?: string; error?: string };
-            const msg = errBody?.message ?? errBody?.error;
-            if (typeof msg === 'string' && msg.trim()) errMsg = msg;
-          } catch {
-            // response was not JSON, keep default errMsg
-          }
-          setMessages((prev) => [...prev, { role: 'assistant', content: errMsg }]);
-        } else {
-          const data = (await res.json()) as { content?: string };
-          const content = data.content ?? 'Nu am putut primi răspuns.';
-          setMessages((prev) => [...prev, { role: 'assistant', content }]);
-        }
+      const history = [...messages, userMsg].map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+      const { data, error } = await supabase.functions.invoke('generate-chat', {
+        body: { messages: history },
+      });
+
+      if (error) {
+        const errMsg =
+          error.message?.includes('Failed to send') || error.message?.includes('FunctionsFetchError')
+            ? 'Serviciul KHEYA nu este disponibil. Verifică deploy-ul funcției generate-chat în Supabase.'
+            : error.message || `Eroare server. Încearcă din nou.`;
+        setMessages((prev) => [...prev, { role: 'assistant', content: errMsg }]);
       } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content:
-              'Configurează EXPO_PUBLIC_NODE_BACKEND_URL în .env pentru a folosi chat-ul. Între timp, explorează materialul și teste din aplicație.',
-          },
-        ]);
+        const payload = data as { content?: string; error?: string } | null;
+        const content =
+          payload?.content?.trim() ||
+          (typeof payload?.error === 'string' ? payload.error : '') ||
+          'Nu am putut primi răspuns.';
+        setMessages((prev) => [...prev, { role: 'assistant', content }]);
       }
     } catch {
       setMessages((prev) => [

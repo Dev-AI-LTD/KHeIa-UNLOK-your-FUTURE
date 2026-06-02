@@ -1,10 +1,11 @@
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { colors, spacing } from '@/theme';
 import { AppText } from './AppText';
 
 type ChatHeaderProps = {
   roomName: string;
   connectionStatus: 'connecting' | 'connected' | 'disconnected';
+  onPressGuidelines?: () => void;
 };
 
 const statusLabel: Record<ChatHeaderProps['connectionStatus'], string> = {
@@ -19,12 +20,21 @@ const statusColor: Record<ChatHeaderProps['connectionStatus'], string> = {
   disconnected: colors.dark.danger,
 };
 
-export function ChatHeader({ roomName, connectionStatus }: ChatHeaderProps) {
+export function ChatHeader({ roomName, connectionStatus, onPressGuidelines }: ChatHeaderProps) {
   return (
     <View style={styles.wrap}>
-      <AppText variant="title3" style={styles.title}>
-        {roomName}
-      </AppText>
+      <View style={styles.titleRow}>
+        <AppText variant="title3" style={styles.title}>
+          {roomName}
+        </AppText>
+        {onPressGuidelines ? (
+          <Pressable onPress={onPressGuidelines} hitSlop={10}>
+            <AppText variant="footnote" style={styles.guidelines}>
+              Reguli
+            </AppText>
+          </Pressable>
+        ) : null}
+      </View>
       <View style={styles.statusRow}>
         <View style={[styles.dot, { backgroundColor: statusColor[connectionStatus] }]} />
         <AppText variant="footnote" style={{ color: statusColor[connectionStatus] }}>
@@ -46,6 +56,16 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: '700',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  guidelines: {
+    color: colors.dark.secondary,
+    fontWeight: '600',
   },
   statusRow: {
     flexDirection: 'row',

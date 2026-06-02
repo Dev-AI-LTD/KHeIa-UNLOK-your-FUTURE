@@ -18,10 +18,10 @@ export function getKindeRedirectUri(): string {
 export function getKindeAuthOptions() {
   const redirectURL = getKindeRedirectUri();
   if (__DEV__ && Constants.appOwnership === 'expo') {
-    console.info(
-      '[Kinde] Expo Go redirect URL (add to Kinde → Callback URLs):\n',
-      redirectURL,
-    );
+    // Use app logger (dev-only) instead of console.* directly.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { logger } = require('@/lib/logger');
+    logger.log('Kinde', 'Expo Go redirect URL (add to Kinde → Callback URLs):', redirectURL);
   }
   return { redirectURL };
 }

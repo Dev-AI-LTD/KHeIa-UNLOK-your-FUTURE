@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, spacing, typography } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { supabase } from '@/services/supabase';
-import { joinDuelByCode } from '@/services/duel.service';
+import { isValidInviteCode, joinDuelByCode } from '@/services/duel.service';
 
 export default function DuelJoinScreen() {
   const { inviteCode } = useLocalSearchParams<{ inviteCode: string }>();
@@ -17,6 +17,11 @@ export default function DuelJoinScreen() {
       if (!inviteCode) {
         setStatus('error');
         setMessage('Cod lipsă.');
+        return;
+      }
+      if (!isValidInviteCode(inviteCode)) {
+        setStatus('error');
+        setMessage('Cod invalid.');
         return;
       }
       const {

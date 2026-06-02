@@ -67,12 +67,16 @@ Reconstruiește iOS dacă schimbi variabila (`eas build --platform ios`).
 | **User name** | `contact@devaieood.com` (emailul complet) |
 | **Password** | parola setată în Kinde |
 
-**Notes (copy-paste):**
+**Notes (copy-paste):** vezi varianta completă (UGC chat, restore, GDPR) în **`docs/APP_STORE_REVIEW_NOTES.md`**.
+
+Scurt:
 
 ```
 Sign-in: email + password only (Kinde). No OTP or magic link for this account.
 
 This review account has full KHEYA Pro access (all chapters, unlimited tests, 10-question quizzes, unlimited theory audio) — granted server-side for App Review. No in-app purchase is required to test content.
+
+Global chat: long-press message → Report / Block. Header → Reguli.
 
 Optional: Sandbox Apple ID can be used separately to test subscription purchase flow.
 ```

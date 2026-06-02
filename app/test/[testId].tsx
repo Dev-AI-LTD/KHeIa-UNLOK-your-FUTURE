@@ -22,12 +22,13 @@ import {
   type QuizQuestion,
   type QuizOption,
 } from '@/services/quiz.service';
-import { parseTestId, createTestRecord } from '@/services/test.service';
+import { parseTestId, createTestRecord, isValidTestIdParam } from '@/services/test.service';
 import { getOfficialTestById } from '@/services/official-tests.service';
 import { buildTestShareMessage } from '@/services/deep-linking.service';
 import { FREE_TESTS_LIMIT } from '@/services/subscription.service';
 import { isRevenueCatConfigured, presentPaywall } from '@/services/purchases.service';
 import { refreshSubscriptionAfterPurchase } from '@/services/subscription.service';
+import { sanitizeExternalHttpsUrl } from '@/utils/safeUrls';
 
 const QUESTION_COUNT = 20;
 
@@ -44,13 +45,16 @@ export default function TestSessionScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [dbTestId, setDbTestId] = useState<string | null>(null);
 
-  const officialTest = getOfficialTestById(String(testId ?? ''));
+  const rawTestId = String(testId ?? '');
+  const officialTest = getOfficialTestById(rawTestId);
   const parsed = officialTest
     ? {
         examType: (officialTest.examType === 'BAC' ? 'Bac' : 'EN') as 'EN' | 'Bac',
         subjectId: officialTest.subjectId,
       }
-    : parseTestId(String(testId ?? ''));
+    : isValidTestIdParam(rawTestId)
+      ? parseTestId(rawTestId)
+      : null;
 
   useEffect(() => {
     const run = async () => {
@@ -194,7 +198,20 @@ export default function TestSessionScreen() {
         </Text>
         {hasSourceUrl && (
           <Pressable
-            onPress={() => Linking.openURL(officialTest.sourceUrl!)}
+            onPress={() => {
+              const safe = sanitizeExternalHttpsUrl(officialTest.sourceUrl!, {
+                allowedHosts: [
+                  'www.edu.ro',
+                  'subiecte.edu.ro',
+                  'subiecte2024.edu.ro',
+                ],
+              });
+              if (!safe) {
+                Alert.alert('Link invalid', 'Link-ul către subiectul oficial nu este valid.');
+                return;
+              }
+              void Linking.openURL(safe);
+            }}
             style={({ pressed }) => [styles.pdfButton, pressed && styles.pdfButtonPressed]}
           >
             <GlassCard dark intensity={14} style={styles.pdfButtonInner}>

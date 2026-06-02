@@ -1,4 +1,4 @@
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { colors, spacing, radius, iosText } from '@/theme';
 import { AppText } from './AppText';
 import { formatMessageTime } from '@/utils/dates';
@@ -6,12 +6,17 @@ import type { ChatMessageViewModel } from '@/features/chat/types';
 
 type MessageBubbleProps = {
   message: ChatMessageViewModel;
+  onLongPress?: (message: ChatMessageViewModel) => void;
 };
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, onLongPress }: MessageBubbleProps) {
   return (
     <View style={[styles.row, message.isOwn ? styles.rowOwn : styles.rowOther]}>
-      <View style={[styles.bubble, message.isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
+      <Pressable
+        onLongPress={message.isOwn ? undefined : () => onLongPress?.(message)}
+        delayLongPress={250}
+        style={[styles.bubble, message.isOwn ? styles.bubbleOwn : styles.bubbleOther]}
+      >
         {!message.isOwn ? (
           <AppText variant="caption2" style={styles.author}>
             {message.username}
@@ -23,7 +28,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <AppText variant="caption2" muted style={styles.time}>
           {formatMessageTime(message.createdAt)}
         </AppText>
-      </View>
+      </Pressable>
     </View>
   );
 }

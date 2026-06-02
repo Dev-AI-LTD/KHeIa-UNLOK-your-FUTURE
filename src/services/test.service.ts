@@ -1,6 +1,16 @@
 import { supabase } from './supabase';
 import { canStartTest, getSubscriptionStatus } from './subscription.service';
 
+const SAFE_TEST_ID_REGEX = /^[a-z0-9-]{3,80}$/;
+
+/**
+ * Defensive check for testId values coming from deep links / navigation params.
+ * Allows only lowercase letters, digits and hyphens, with a sane length.
+ */
+export function isValidTestIdParam(testId: string): boolean {
+  return SAFE_TEST_ID_REGEX.test((testId ?? '').trim());
+}
+
 /**
  * Parse testId (ex: en-subj-en-romana, bac-subj-bac-matematica-real) into exam type and subject id.
  */

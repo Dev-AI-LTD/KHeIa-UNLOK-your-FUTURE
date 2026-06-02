@@ -1,6 +1,7 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { colors, spacing, typography } from '@/theme';
+import { logger } from '@/lib/logger';
 
 interface Props {
   children: ReactNode;
@@ -20,7 +21,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[ErrorBoundary]', error, errorInfo);
+    logger.error('ErrorBoundary', error.message, { componentStack: errorInfo.componentStack });
   }
 
   handleRetry = () => {
@@ -60,7 +61,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
-    backgroundColor: 'transparent',
+    backgroundColor: colors.dark.background,
   },
   emoji: {
     fontSize: 48,

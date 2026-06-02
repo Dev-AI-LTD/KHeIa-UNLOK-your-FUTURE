@@ -10,6 +10,7 @@ import {
   sendMessage,
 } from './api';
 import { subscribeToChatRoom } from './realtime';
+import { useMessageModeration } from './useMessageModeration';
 import type { ChatMessageViewModel } from './types';
 import { logger } from '@/lib/logger';
 
@@ -20,11 +21,17 @@ function formatChatError(e: unknown): { title: string; subtitle: string } {
     err?.details ??
     (e instanceof Error ? e.message : typeof e === 'string' ? e : '');
 
-  if (err?.code === 'PGRST205' || msg.includes('public.rooms') || msg.includes('public.messages')) {
+  if (
+    err?.code === 'PGRST205' ||
+    msg.includes('public.rooms') ||
+    msg.includes('public.messages') ||
+    msg.includes('chat_user_blocks') ||
+    msg.includes('chat_message_reports')
+  ) {
     return {
       title: 'Chat neconfigurat',
       subtitle:
-        'Tabelele chat nu sunt create în Supabase. Rulează SQL-ul din docs/supabase-chat-copy-paste.sql (Dashboard → SQL Editor), apoi apasă Reîncearcă.',
+        'Tabelele chat nu sunt create în Supabase. Rulează migrările 020 și 022 (Dashboard → SQL Editor), apoi apasă Reîncearcă.',
     };
   }
   if (msg.includes('Global Chat nu există') || msg.includes('migrarea SQL 020')) {
@@ -76,6 +83,15 @@ function toViewModel(
   };
 }
 
+function filterBlocked(
+  rows: ChatMessageViewModel[],
+  blockedIds: string[],
+): ChatMessageViewModel[] {
+  if (blockedIds.length === 0) return rows;
+  const blocked = new Set(blockedIds);
+  return rows.filter((m) => !blocked.has(m.userId));
+}
+
 export function useGlobalChat() {
   const session = useAuthStore((s) => s.session);
   const userId = session?.user?.id ?? null;
@@ -84,6 +100,7 @@ export function useGlobalChat() {
     activeRoom,
     messages,
     onlineUsers,
+    blockedUserIds,
     loading,
     connectionStatus,
     setActiveRoom,
@@ -97,6 +114,9 @@ export function useGlobalChat() {
     errorTitle,
     reset,
   } = useChatStore();
+
+  const { loadBlockedUsers, onMessageLongPress, showCommunityGuidelines } =
+    useMessageModeration(userId);
 
   const realtimeRef = useRef<ReturnType<typeof subscribeToChatRoom> | null>(null);
 
@@ -119,9 +139,14 @@ export function useGlobalChat() {
       setActiveRoom(room);
       await ensureRoomMembership(room.id, userId);
 
+      const blocked = await loadBlockedUsers();
+
       const rows = await fetchMessages(room.id);
       const profileMap = await fetchProfilesByIds(rows.map((r) => r.user_id));
-      const vms = rows.map((r) => toViewModel(r, profileMap, userId));
+      const vms = filterBlocked(
+        rows.map((r) => toViewModel(r, profileMap, userId)),
+        [...blocked],
+      );
       setMessages(vms);
 
       realtimeRef.current?.unsubscribe();
@@ -129,6 +154,9 @@ export function useGlobalChat() {
         roomId: room.id,
         currentUserId: userId,
         onMessage: (msg, profile) => {
+          if (useChatStore.getState().blockedUserIds.includes(msg.user_id)) {
+            return;
+          }
           addMessage(
             toViewModel(
               msg,
@@ -149,6 +177,7 @@ export function useGlobalChat() {
     }
   }, [
     addMessage,
+    loadBlockedUsers,
     reset,
     setActiveRoom,
     setConnectionStatus,
@@ -192,11 +221,14 @@ export function useGlobalChat() {
     activeRoom,
     messages,
     onlineUsers,
+    blockedUserIds,
     loading,
     connectionStatus,
     error,
     errorTitle,
     postMessage,
     refresh: bootstrap,
+    onMessageLongPress,
+    showCommunityGuidelines,
   };
 }
