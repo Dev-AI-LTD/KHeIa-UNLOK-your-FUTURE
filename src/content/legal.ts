@@ -52,6 +52,7 @@ KHEYA – Unlock Your Future („aplicația”) este oferită de DEV AI LTD EOOD
 • Date elev: nume elev (dacă este furnizat)
 • Date de utilizare: progres pe capitole, scoruri la quiz-uri și teste, statistici
 • Date tehnice: adresă IP (pentru securitate și anti-abuz), tip device, versiunea aplicației
+• Conținut generat de utilizator: texte introduse în chat/întrebări și texte trimise pentru ascultare (TTS), atunci când folosești funcțiile AI
 • Nu colectăm date inutile; nu afișăm reclame terțe. Monetizarea este prin abonamente KHEYA Premium.
 
 3. Cum folosim datele
@@ -61,7 +62,15 @@ KHEYA – Unlock Your Future („aplicația”) este oferită de DEV AI LTD EOOD
 • Respectarea obligațiilor legale și apărarea drepturilor noastre
 
 4. Partajarea datelor
-Nu vindem datele tale. Le putem partaja numai cu furnizori împuterniciți (hosting, autentificare, procesare plăți) care procesează datele în numele nostru, sub contract, și cu autoritățile dacă legea o cere. Datele sunt găzduite pe servere din UE.
+Nu vindem datele tale. Le putem partaja numai cu furnizori împuterniciți (hosting, autentificare, abonamente/IAP, procesare AI) care procesează datele în numele nostru, sub contract, și cu autoritățile dacă legea o cere.
+
+Furnizori principali:
+• Supabase (bază de date, sincronizare cont și progres)
+• Kinde (autentificare)
+• RevenueCat (abonamente/IAP)
+• Furnizori AI (de ex. OpenAI / Google Gemini) pentru funcțiile de generare și text-to-speech, atunci când folosești aceste funcții
+
+Notă: în funcție de infrastructura furnizorilor, unele date pot fi procesate în afara UE. Folosim furnizori și setări care urmăresc să protejeze datele și să respecte cerințele legale aplicabile.
 
 5. Securitate
 Aplicăm măsuri tehnice și organizatorice adecvate: criptare, autentificare sigură, acces restricționat la date.

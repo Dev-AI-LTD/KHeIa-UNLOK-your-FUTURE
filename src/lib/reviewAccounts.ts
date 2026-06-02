@@ -2,7 +2,7 @@
  * Emailuri pentru conturi Apple/Google review — Premium din Supabase, fără achiziție RC.
  * Setează EXPO_PUBLIC_REVIEW_ACCOUNT_EMAILS în .env / EAS (virgulă între adrese).
  */
-const DEFAULT_REVIEW_EMAIL = 'apple.review@kheia.ro';
+const DEFAULT_REVIEW_EMAIL = 'contact@devaieood.com';
 
 function parseReviewEmails(raw: string | undefined): string[] {
   const value = (raw ?? DEFAULT_REVIEW_EMAIL).trim();

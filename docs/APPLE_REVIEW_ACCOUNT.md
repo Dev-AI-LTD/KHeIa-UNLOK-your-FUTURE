@@ -6,8 +6,8 @@ Folosește un cont dedicat ca reviewerii Apple să intre **fără OTP** și să 
 
 | Câmp | Valoare (exemplu — schimbă parola în producție) |
 |------|--------------------------------------------------|
-| **Email (User Name în App Store Connect)** | `apple.review@kheia.ro` |
-| **Parolă** | `KheyaReview2026!` (min. 8 caractere, literă + cifră) |
+| **Email (User Name în App Store Connect)** | `contact@devaieood.com` |
+| **Parolă** | parola setată în Kinde (**Set temporary password**) — nu o pune în git |
 
 Același email trebuie configurat în:
 - **Kinde** (utilizator cu parolă)
@@ -22,7 +22,7 @@ Același email trebuie configurat în:
 2. **Authentication** → activează doar **Email** (username + password).
 3. **Dezactivează** passwordless / magic link / OTP / MFA pentru acest flux (obligatoriu pentru review).
 4. **Users** → **Add user**:
-   - Email: `apple.review@kheia.ro`
+   - Email: `contact@devaieood.com`
    - Parolă: ce pui în App Store Connect
 5. **Settings → Applications** → Callback URLs: `kheia://kinde_callback`
 
@@ -33,7 +33,7 @@ Același email trebuie configurat în:
 La **primul login** (și la fiecare login), funcția `kinde-bridge` setează Premium pentru emailurile din lista de review.
 
 ```bash
-npx supabase secrets set REVIEW_ACCOUNT_EMAILS=apple.review@kheia.ro
+npx supabase secrets set REVIEW_ACCOUNT_EMAILS=contact@devaieood.com
 npx supabase functions deploy kinde-bridge
 ```
 
@@ -52,7 +52,7 @@ sau loghează-te o dată în app după deploy la `kinde-bridge` — Premium se a
 Adaugă în **EAS Environment** (production / preview) sau în `.env` local:
 
 ```
-EXPO_PUBLIC_REVIEW_ACCOUNT_EMAILS=apple.review@kheia.ro
+EXPO_PUBLIC_REVIEW_ACCOUNT_EMAILS=contact@devaieood.com
 ```
 
 Reconstruiește iOS dacă schimbi variabila (`eas build --platform ios`).
@@ -64,7 +64,7 @@ Reconstruiește iOS dacă schimbi variabila (`eas build --platform ios`).
 | Câmp | Valoare |
 |------|---------|
 | **Sign-in required** | Yes |
-| **User name** | `apple.review@kheia.ro` (emailul complet) |
+| **User name** | `contact@devaieood.com` (emailul complet) |
 | **Password** | parola setată în Kinde |
 
 **Notes (copy-paste):**

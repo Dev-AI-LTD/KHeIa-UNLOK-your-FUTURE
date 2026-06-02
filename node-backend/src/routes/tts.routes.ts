@@ -1,8 +1,9 @@
 import { Express, Request, Response } from 'express';
 import { speakText } from '../services/tts.service';
+import { serviceAuth } from '../middleware/auth.middleware';
 
 export const registerTtsRoutes = (app: Express) => {
-  app.post('/api/tts/speak', async (req: Request, res: Response) => {
+  app.post('/api/tts/speak', serviceAuth, async (req: Request, res: Response) => {
     const { text } = req.body as { text?: string; chapterId?: string };
 
     if (typeof text !== 'string' || !text.trim()) {

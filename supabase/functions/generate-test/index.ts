@@ -2,6 +2,14 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { getSupabaseClient } from '../_shared/supabase-client.ts';
 import { getSupabaseUser } from '../_shared/auth.ts';
 
+function requireServiceTokenHeaders(): Record<string, string> {
+  const token = (Deno.env.get('SERVICE_TOKEN') ?? '').trim();
+  if (!token) {
+    throw new Error('SERVICE_TOKEN missing.');
+  }
+  return { 'x-service-token': token };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -40,7 +48,7 @@ Deno.serve(async (req) => {
   const referralUntil = profile?.referral_premium_until as string | null;
   const referralActive = referralUntil && new Date(referralUntil) > new Date();
 
-  const reviewEmails = (Deno.env.get('REVIEW_ACCOUNT_EMAILS') ?? 'apple.review@kheia.ro')
+  const reviewEmails = (Deno.env.get('REVIEW_ACCOUNT_EMAILS') ?? 'contact@devaieood.com')
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
@@ -76,9 +84,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const serviceHeaders = requireServiceTokenHeaders();
     const backendRes = await fetch(`${backendUrl.startsWith('http') ? '' : 'https://'}${backendUrl}/api/generate/test`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...serviceHeaders },
       body: JSON.stringify({ ...body, user_id: user.id }),
     });
     const payload = await backendRes.json();

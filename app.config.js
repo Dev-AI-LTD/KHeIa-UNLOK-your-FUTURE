@@ -32,6 +32,6 @@ module.exports = ({ config }) => ({
     EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID:
       process.env.EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID?.trim() || 'KheIA Pro',
     EXPO_PUBLIC_REVIEW_ACCOUNT_EMAILS:
-      process.env.EXPO_PUBLIC_REVIEW_ACCOUNT_EMAILS?.trim() || 'apple.review@kheia.ro',
+      process.env.EXPO_PUBLIC_REVIEW_ACCOUNT_EMAILS?.trim() || 'contact@devaieood.com',
   },
 });

@@ -2,6 +2,14 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { getSupabaseClient } from '../_shared/supabase-client.ts';
 import { getSupabaseUser } from '../_shared/auth.ts';
 
+function requireServiceTokenHeaders(): Record<string, string> {
+  const token = (Deno.env.get('SERVICE_TOKEN') ?? '').trim();
+  if (!token) {
+    throw new Error('SERVICE_TOKEN missing.');
+  }
+  return { 'x-service-token': token };
+}
+
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -45,9 +53,10 @@ Deno.serve(async (req) => {
     let backendUrl = (Deno.env.get('NODE_BACKEND_URL') ?? '').trim();
     if (!backendUrl) return jsonResponse({ source: 'error', content: 'NODE_BACKEND_URL missing.' }, 500);
 
+    const serviceHeaders = requireServiceTokenHeaders();
     const backendRes = await fetch(`${backendUrl.startsWith('http') ? '' : 'https://'}${backendUrl}/api/generate/chapter`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...serviceHeaders },
       body: JSON.stringify(body),
     });
 

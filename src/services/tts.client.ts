@@ -77,21 +77,20 @@ async function fetchTtsFromSupabaseEdge(text: string, chapterId: string): Promis
 }
 
 export function isTtsAvailable(): boolean {
-  const hasBackend = !!getNodeBackendUrl();
   const hasSupabase =
     !!supabaseUrl &&
     !!supabaseAnonKey &&
     !supabaseAnonKey.includes('missing') &&
     !supabaseUrl.includes('placeholder');
-  return hasBackend || hasSupabase;
+  return hasSupabase;
 }
 
-/** Node backend first; Supabase edge `tts-speak` if route missing on Railway. */
+/**
+ * Use Supabase Edge Function for TTS.
+ *
+ * Security: do not call the node-backend directly from the client, because the backend is protected
+ * with a server-to-server token.
+ */
 export async function fetchChapterTtsAudio(text: string, chapterId: string): Promise<ArrayBuffer> {
-  const fromNode = await fetchTtsFromNodeBackend(text, chapterId);
-  if (fromNode) {
-    return fromNode;
-  }
-
   return fetchTtsFromSupabaseEdge(text, chapterId);
 }

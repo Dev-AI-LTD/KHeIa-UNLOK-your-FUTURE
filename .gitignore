@@ -5,6 +5,7 @@
 secrets/
 supabase/.env
 supabase/.temp/
+.expo-export-test/
 
 # Dependencies
 node_modules/
@@ -38,3 +39,10 @@ Thumbs.db
 # Testing
 coverage/
 .nyc_output/
+
+# App Store screenshots (large binaries)
+marketing/app-store/source/*.png
+marketing/app-store/source/*.jpg
+marketing/app-store/source/*.jpeg
+marketing/app-store/source/*.webp
+marketing/app-store/export/

@@ -71,7 +71,8 @@ export default function Index() {
     return <Redirect href="/login" />;
   }
 
-  return <Redirect href="/(tabs)/home" />;
+  // Redirect to the Tabs group; Tabs layout controls initial route (home).
+  return <Redirect href="/(tabs)" />;
 }
 
 const styles = StyleSheet.create({

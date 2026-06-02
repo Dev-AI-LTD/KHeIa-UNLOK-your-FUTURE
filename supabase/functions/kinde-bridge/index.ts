@@ -20,7 +20,7 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
 const REVIEW_PREMIUM_UNTIL = '2099-12-31T23:59:59.000Z';
 
 function parseReviewEmails(): string[] {
-  return (Deno.env.get('REVIEW_ACCOUNT_EMAILS') ?? 'apple.review@kheia.ro')
+  return (Deno.env.get('REVIEW_ACCOUNT_EMAILS') ?? 'contact@devaieood.com')
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);

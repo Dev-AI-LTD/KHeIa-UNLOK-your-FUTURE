@@ -1,5 +1,14 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { getSupabaseClient } from '../_shared/supabase-client.ts';
+import { getSupabaseUser } from '../_shared/auth.ts';
+
+function requireServiceTokenHeaders(): Record<string, string> {
+  const token = (Deno.env.get('SERVICE_TOKEN') ?? '').trim();
+  if (!token) {
+    throw new Error('SERVICE_TOKEN missing.');
+  }
+  return { 'x-service-token': token };
+}
 
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -16,6 +25,11 @@ Deno.serve(async (req) => {
   try {
     const supabase = getSupabaseClient();
     const body = (await req.json()) as { chapter_id: string; topic?: string };
+
+    const user = await getSupabaseUser(req);
+    if (!user) {
+      return jsonResponse({ error: 'Unauthorized' }, 401);
+    }
 
     if (!body?.chapter_id) {
       return jsonResponse({ source: 'error', content: 'Lipsește chapter_id.' });
@@ -53,7 +67,7 @@ Deno.serve(async (req) => {
 
     const backendRes = await fetch(`${backendUrl}/api/generate/summary`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...requireServiceTokenHeaders() },
       body: JSON.stringify({ ...body, topic, summaryOnly: true }),
     });
 

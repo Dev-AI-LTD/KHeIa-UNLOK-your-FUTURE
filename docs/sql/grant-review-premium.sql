@@ -6,7 +6,7 @@ declare
   uid uuid;
   until_ts timestamptz := '2099-12-31 23:59:59+00';
 begin
-  select id into uid from auth.users where lower(email) = lower('apple.review@kheia.ro');
+  select id into uid from auth.users where lower(email) = lower('contact@devaieood.com');
   if uid is null then
     raise exception 'User not found. Log in once in the app with this email, then re-run.';
   end if;

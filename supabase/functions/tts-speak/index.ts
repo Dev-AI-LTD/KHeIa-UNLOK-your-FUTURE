@@ -1,4 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts';
+import { getSupabaseUser } from '../_shared/auth.ts';
 
 const MAX_CHARS = 4000;
 const ALLOWED_VOICES = new Set(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']);
@@ -28,6 +29,11 @@ Deno.serve(async (req) => {
 
   if (req.method !== 'POST') {
     return jsonError('Method not allowed', 405);
+  }
+
+  const user = await getSupabaseUser(req);
+  if (!user) {
+    return jsonError('Unauthorized', 401);
   }
 
   const apiKey = Deno.env.get('OPENAI_API_KEY');
