@@ -25,7 +25,7 @@ export const generateTheory = async (chapterId: string, topic?: string) => {
   if (error) {
     const msg =
       error.message?.includes('Failed to send a request') || error.message?.includes('edge function')
-        ? 'Serviciul de generare nu este disponibil. Verifică deploy-ul Edge Functions în Supabase.'
+        ? 'Serviciul de generare nu este disponibil momentan. Încearcă din nou mai târziu.'
         : error.message;
     return { data: null, error: new Error(msg ?? 'Nu s-a putut genera teoria.') };
   }

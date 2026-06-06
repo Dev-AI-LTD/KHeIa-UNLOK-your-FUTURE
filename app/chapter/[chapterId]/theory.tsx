@@ -24,6 +24,7 @@ import {
   isRevenueCatConfigured,
   presentPaywall,
 } from '@/services/purchases.service';
+import { paymentsUnavailableMessage } from '@/lib/storeCopy';
 
 const chapterTheoryData = require('../../../assets/offline-data/chaptertheory.json') as Array<{
   chapter_id: string;
@@ -67,10 +68,7 @@ export default function ChapterTheoryScreen() {
 
   const openPremiumPaywall = useCallback(async () => {
     if (!isRevenueCatConfigured()) {
-      Alert.alert(
-        'KHEYA Pro',
-        'Abonamentele se activează prin Google Play. Configurează RevenueCat în .env și reconstruiește app-ul.',
-      );
+      Alert.alert('KHEYA Pro', paymentsUnavailableMessage());
       return;
     }
     if (await hasProEntitlement()) {
@@ -130,7 +128,7 @@ export default function ChapterTheoryScreen() {
     if (!isTtsAvailable()) {
       Alert.alert(
         'Indisponibil',
-        'Configurează Supabase sau EXPO_PUBLIC_NODE_BACKEND_URL pentru ascultare.',
+        'Ascultarea teoriei nu este disponibilă momentan. Încearcă din nou mai târziu.',
       );
       return;
     }

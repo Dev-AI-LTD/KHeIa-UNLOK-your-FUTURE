@@ -8,6 +8,7 @@ import {
   InteractionManager,
   ScrollView,
   Image,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ import { IOSButton } from '@/components/ui/IOSButton';
 import { bridgeKindeToSupabase, restoreSupabaseFromKinde } from '@/services/auth.service';
 import { getKindeAuthOptions } from '@/lib/kindeConfig';
 import { supabase } from '@/services/supabase';
+import { getPrivacyPolicyUrl, getTermsUrl, openLegalUrl } from '@/lib/legalUrls';
 
 const brandIcon = require('../../assets/KHEIA ICON.png');
 
@@ -208,6 +210,39 @@ export default function LoginScreen() {
       </GlassCard>
 
       <Text style={styles.footer}>Datele tale sunt protejate · autentificare securizată</Text>
+
+      <View style={styles.legalLinks}>
+        {getPrivacyPolicyUrl() ? (
+          <Pressable
+            onPress={() => {
+              const url = getPrivacyPolicyUrl();
+              if (!url) return;
+              void openLegalUrl(url, 'politica de confidențialitate').catch((e: unknown) => {
+                Alert.alert('Eroare', e instanceof Error ? e.message : 'Nu s-a putut deschide linkul.');
+              });
+            }}
+            accessibilityRole="link"
+            accessibilityLabel="Politica de confidențialitate"
+          >
+            <Text style={styles.legalLink}>Politica de confidențialitate</Text>
+          </Pressable>
+        ) : null}
+        {getTermsUrl() ? (
+          <Pressable
+            onPress={() => {
+              const url = getTermsUrl();
+              if (!url) return;
+              void openLegalUrl(url, 'termenii și condițiile').catch((e: unknown) => {
+                Alert.alert('Eroare', e instanceof Error ? e.message : 'Nu s-a putut deschide linkul.');
+              });
+            }}
+            accessibilityRole="link"
+            accessibilityLabel="Termeni și condiții"
+          >
+            <Text style={styles.legalLink}>Termeni și condiții</Text>
+          </Pressable>
+        ) : null}
+      </View>
     </ScrollView>
   );
 }
@@ -362,5 +397,17 @@ const styles = StyleSheet.create({
     ...iosText('caption1'),
     color: 'rgba(255, 255, 255, 0.45)',
     textAlign: 'center',
+  },
+  legalLinks: {
+    marginTop: spacing.fieldGap,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.md,
+  },
+  legalLink: {
+    ...iosText('caption1'),
+    color: colors.dark.primary,
+    textDecorationLine: 'underline',
   },
 });

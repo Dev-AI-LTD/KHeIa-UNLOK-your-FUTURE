@@ -14,13 +14,20 @@
     "plugins": [
       "./node_modules/expo-router/app.plugin.js",
       "expo-asset",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false
+        }
+      ],
       "expo-secure-store",
       "expo-web-browser",
       [
         "expo-image-picker",
         {
-          "photosPermission": "KHEYA folosește galeria pentru poza ta de profil din clasament."
+          "photosPermission": "KHEYA folosește galeria pentru poza ta de profil din clasament.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       [
@@ -42,7 +49,7 @@
     },
     "description": "Pregătire Evaluare Națională 2026, Bacalaureat Română, simulări admitere. Teorie, quiz-uri și teste pentru EN și BAC.",
     "android": {
-      "versionCode": 12,
+      "versionCode": 13,
       "package": "com.kheia.edumat",
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "resize",
@@ -59,7 +66,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.kheia.edumat",
-      "buildNumber": "13",
+      "buildNumber": "14",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

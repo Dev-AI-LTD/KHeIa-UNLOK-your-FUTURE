@@ -12,7 +12,7 @@ async function parseTtsError(res: Response, fallback: string): Promise<string> {
     // not JSON (e.g. HTML 404 page)
   }
   if (res.status === 404) {
-    return 'Serviciul TTS nu este disponibil pe server. Repornește backend-ul sau redeploy Supabase (tts-speak).';
+    return 'Ascultarea teoriei nu este disponibilă momentan. Încearcă din nou mai târziu.';
   }
   return `${fallback} (${res.status})`;
 }
@@ -24,7 +24,7 @@ function assertValidMp3Buffer(buffer: ArrayBuffer): void {
   }
   if (!isLikelyMp3Buffer(buffer)) {
     throw new Error(
-      'Răspuns invalid de la serverul TTS. Verifică OPENAI_API_KEY pe Supabase sau redeploy backend.',
+      'Nu am putut reda audio-ul. Încearcă din nou mai târziu.',
     );
   }
 }

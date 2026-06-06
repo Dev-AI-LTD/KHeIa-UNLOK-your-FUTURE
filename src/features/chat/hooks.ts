@@ -29,13 +29,16 @@ function formatChatError(e: unknown): { title: string; subtitle: string } {
     msg.includes('chat_message_reports')
   ) {
     return {
-      title: 'Chat neconfigurat',
+      title: 'Chat indisponibil',
       subtitle:
-        'Tabelele chat nu sunt create în Supabase. Rulează migrările 020 și 022 (Dashboard → SQL Editor), apoi apasă Reîncearcă.',
+        'Chatul comunității nu este disponibil momentan. Verifică conexiunea și apasă Reîncearcă.',
     };
   }
   if (msg.includes('Global Chat nu există') || msg.includes('migrarea SQL 020')) {
-    return { title: 'Chat neconfigurat', subtitle: msg };
+    return {
+      title: 'Chat indisponibil',
+      subtitle: 'Chatul comunității nu este disponibil momentan. Verifică conexiunea și apasă Reîncearcă.',
+    };
   }
   if (msg.includes('foreign key') || msg.includes('profiles')) {
     return {
@@ -52,9 +55,9 @@ function formatChatError(e: unknown): { title: string; subtitle: string } {
   }
   if (msg.includes('missing-anon-key') || msg.includes('placeholder')) {
     return {
-      title: 'Chat neconfigurat',
+      title: 'Chat indisponibil',
       subtitle:
-        'Lipsesc cheile Supabase în build. Verifică EXPO_PUBLIC_SUPABASE_URL și EXPO_PUBLIC_SUPABASE_ANON_KEY în EAS (production).',
+        'Serviciul nu este disponibil în această versiune. Actualizează aplicația sau contactează contact@kheya.ro.',
     };
   }
   if (msg.trim()) {
@@ -62,8 +65,7 @@ function formatChatError(e: unknown): { title: string; subtitle: string } {
   }
   return {
     title: 'Chat indisponibil',
-    subtitle:
-      'Verifică conexiunea la internet și că migrarea chat (020) a fost rulată în Supabase → SQL Editor.',
+    subtitle: 'Verifică conexiunea la internet și apasă Reîncearcă.',
   };
 }
 
@@ -133,7 +135,7 @@ export function useGlobalChat() {
     try {
       const room = await fetchGlobalRoom();
       if (!room) {
-        throw new Error('Camera Global Chat nu există. Rulează migrarea SQL 020.');
+        throw new Error('Chatul comunității nu este disponibil momentan.');
       }
 
       setActiveRoom(room);

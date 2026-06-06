@@ -47,6 +47,7 @@ import {
   presentCustomerCenter,
   type PaywallResult,
 } from '@/services/purchases.service';
+import { paymentsUnavailableMessage } from '@/lib/storeCopy';
 
 const PROFILE_TABS: TabItem[] = [
   { id: 'evolutie', label: 'Evoluție' },
@@ -158,19 +159,6 @@ export default function ProfileScreen() {
             <Text style={styles.referralTitle}>Invită colegii</Text>
             <Text style={styles.referralSubtitle}>
               Share codul tău și deblochează capitol nou
-            </Text>
-            <Text style={styles.referralCta}>→ Deschide</Text>
-          </GlassCard>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push('/rewards')}
-          style={({ pressed }) => [styles.referralCard, pressed && styles.chapterRowPressed]}
-        >
-          <GlassCard dark intensity={18} style={styles.rewardsCardInner}>
-            <Text style={styles.referralTitle}>Schimbă premii</Text>
-            <Text style={styles.referralSubtitle}>
-              Folosește monedele pentru premii. Va urma.
             </Text>
             <Text style={styles.referralCta}>→ Deschide</Text>
           </GlassCard>
@@ -433,12 +421,7 @@ export default function ProfileScreen() {
       return;
     }
     if (!isRevenueCatConfigured()) {
-      Alert.alert(
-        'Indisponibil',
-        __DEV__
-          ? 'Adaugă EXPO_PUBLIC_REVENUECAT_API_KEY_GOOGLE în .env și reconstruiește app-ul (npm run android).'
-          : 'Plățile nu sunt disponibile în această versiune. Actualizează aplicația din Play Store sau contactează contact@kheya.ro.',
-      );
+      Alert.alert('Indisponibil', paymentsUnavailableMessage());
       return;
     }
     const result = await presentPaywall();
@@ -464,7 +447,7 @@ export default function ProfileScreen() {
       return;
     }
     if (!isRevenueCatConfigured()) {
-      Alert.alert('Indisponibil', 'RevenueCat nu este configurat pe acest build.');
+      Alert.alert('Indisponibil', paymentsUnavailableMessage());
       return;
     }
     const ccResult = await presentCustomerCenter();

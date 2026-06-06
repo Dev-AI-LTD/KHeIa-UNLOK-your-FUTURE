@@ -15,7 +15,7 @@ export type Profile = {
 
 const REFERRALS_FOR_PREMIUM = 5;
 
-const REFERRAL_APP_URL = 'https://expo.dev/accounts/devaieoodltd1/projects/kheia';
+const REFERRAL_APP_URL = 'https://www.kheya.ro';
 
 /**
  * Gets or creates the user's profile.

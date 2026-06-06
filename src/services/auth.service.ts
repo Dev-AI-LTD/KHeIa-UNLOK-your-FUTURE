@@ -39,7 +39,7 @@ async function bridgeKindeToSupabaseOnce(kindeAccessToken: string): Promise<{ er
     let message = await edgeFunctionErrorMessage(error);
     if (message.includes('not found')) {
       message =
-        'Funcția kinde-bridge nu e găsită pe Supabase. Rulează: npx supabase functions deploy kinde-bridge';
+        'Serviciul de autentificare nu este disponibil momentan. Încearcă din nou sau contactează contact@kheya.ro.';
     }
     return { error: new Error(message) };
   }

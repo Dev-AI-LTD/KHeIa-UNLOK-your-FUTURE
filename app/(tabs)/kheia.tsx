@@ -133,6 +133,20 @@ export default function KheiaScreen() {
     setLoading(true);
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'Sesiune expirată. Reconectează-te din Profil și încearcă din nou.',
+          },
+        ]);
+        return;
+      }
+
       const history = [...messages, userMsg].map((m) => ({
         role: m.role,
         content: m.content,
@@ -142,13 +156,27 @@ export default function KheiaScreen() {
       });
 
       if (error) {
-        const errMsg =
-          error.message?.includes('Failed to send') || error.message?.includes('FunctionsFetchError')
-            ? 'Serviciul KHEYA nu este disponibil. Verifică deploy-ul funcției generate-chat în Supabase.'
-            : error.message || `Eroare server. Încearcă din nou.`;
+        const isUnauthorized =
+          error.message?.includes('401') ||
+          error.message?.toLowerCase().includes('unauthorized');
+        const errMsg = isUnauthorized
+          ? 'Sesiune expirată. Reconectează-te și încearcă din nou.'
+          : error.message?.includes('Failed to send') || error.message?.includes('FunctionsFetchError')
+            ? 'Serviciul KHEYA nu este disponibil momentan. Verifică conexiunea și încearcă din nou.'
+            : error.message || 'Eroare server. Încearcă din nou.';
         setMessages((prev) => [...prev, { role: 'assistant', content: errMsg }]);
       } else {
         const payload = data as { content?: string; error?: string } | null;
+        if (payload?.error === 'Unauthorized') {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: 'Sesiune expirată. Reconectează-te și încearcă din nou.',
+            },
+          ]);
+          return;
+        }
         const content =
           payload?.content?.trim() ||
           (typeof payload?.error === 'string' ? payload.error : '') ||
@@ -160,7 +188,7 @@ export default function KheiaScreen() {
         ...prev,
         {
           role: 'assistant',
-          content: 'Eroare de conexiune. Verifică intern și încearcă din nou.',
+          content: 'Eroare de conexiune. Verifică internetul și încearcă din nou.',
         },
       ]);
     } finally {

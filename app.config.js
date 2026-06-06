@@ -34,7 +34,8 @@ module.exports = ({ config }) => ({
     EXPO_PUBLIC_REVIEW_ACCOUNT_EMAILS:
       process.env.EXPO_PUBLIC_REVIEW_ACCOUNT_EMAILS?.trim() || 'contact@devaieood.com',
     EXPO_PUBLIC_PRIVACY_POLICY_URL:
-      process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL?.trim() || 'https://kheya.ro/privacy',
+      process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL?.trim() ||
+      'https://www.kheya.ro/politicadeconfidentialitate',
     EXPO_PUBLIC_TERMS_URL:
       process.env.EXPO_PUBLIC_TERMS_URL?.trim() || 'https://kheya.ro/terms',
   },

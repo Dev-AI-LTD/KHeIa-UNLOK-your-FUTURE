@@ -13,6 +13,7 @@ import {
   isRevenueCatConfigured,
   presentPaywall,
 } from '@/services/purchases.service';
+import { paymentsUnavailableMessage } from '@/lib/storeCopy';
 
 export default function SubjectDetailScreen() {
   const { subjectId } = useLocalSearchParams<{ subjectId: string }>();
@@ -30,10 +31,7 @@ export default function SubjectDetailScreen() {
 
   const openPremiumPaywall = useCallback(async () => {
     if (!isRevenueCatConfigured()) {
-      Alert.alert(
-        'KHEYA Pro',
-        'Abonamentele se activează prin magazinul de aplicații. Verifică configurarea RevenueCat.',
-      );
+      Alert.alert('KHEYA Pro', paymentsUnavailableMessage());
       return;
     }
     if (await hasProEntitlement()) {

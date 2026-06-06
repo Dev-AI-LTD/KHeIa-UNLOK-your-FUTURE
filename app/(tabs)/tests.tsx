@@ -11,9 +11,18 @@ import { getOnboardingExam } from '@/lib/onboardingStorage';
 import type { ExamType } from '@/types/tests';
 import { supabase } from '@/services/supabase';
 import { canUserStartTest } from '@/services/test.service';
-import { FREE_TESTS_LIMIT } from '@/services/subscription.service';
-import { isRevenueCatConfigured, presentPaywall } from '@/services/purchases.service';
-import { refreshSubscriptionAfterPurchase } from '@/services/subscription.service';
+import {
+  canAccessChapter,
+  FREE_CHAPTERS_PER_SUBJECT,
+  FREE_TESTS_LIMIT,
+  refreshSubscriptionAfterPurchase,
+} from '@/services/subscription.service';
+import {
+  hasProEntitlement,
+  isRevenueCatConfigured,
+  presentPaywall,
+} from '@/services/purchases.service';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const YEARS = [2026, 2025, 2024, 2023, 2022];
 
@@ -21,6 +30,7 @@ export default function TestsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { subjects, chapters: chaptersData, loading } = useCatalogContext();
+  const { status, isPremium, refreshAfterPurchase } = useSubscription();
   const [generatedChapters, setGeneratedChapters] = useState<typeof chaptersData>([]);
   const [mode, setMode] = useState<'GENERATED' | 'OFFICIAL'>('GENERATED');
   const [examType, setExamType] = useState<ExamType>('EN');
@@ -56,6 +66,42 @@ export default function TestsScreen() {
   const officialTests = useMemo(
     () => getOfficialExamTests({ examType, year, subjectId }),
     [examType, year, subjectId]
+  );
+
+  const openPremiumPaywall = useCallback(async () => {
+    if (!isRevenueCatConfigured()) return;
+    const result = await presentPaywall();
+    if (result === 'PURCHASED' || result === 'RESTORED') {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user?.id) {
+        await refreshAfterPurchase();
+      }
+    }
+  }, [refreshAfterPurchase]);
+
+  const handleChapterQuizPress = useCallback(
+    async (chapterId: string, subjectId: string, chapterOrder: number) => {
+      if (!status) return;
+      const allowed =
+        isPremium ||
+        (await hasProEntitlement()) ||
+        canAccessChapter(subjectId, chapterOrder, status);
+      if (allowed) {
+        router.push(`/chapter/${chapterId}/quiz`);
+        return;
+      }
+      Alert.alert(
+        'KHEYA Pro',
+        `Planul gratuit include primele ${FREE_CHAPTERS_PER_SUBJECT} capitole per materie. Deblochează KHEYA Pro pentru quiz-uri complete.`,
+        [
+          { text: 'Anulare', style: 'cancel' },
+          { text: 'Vezi abonamente', onPress: () => void openPremiumPaywall() },
+        ],
+      );
+    },
+    [status, isPremium, router, openPremiumPaywall],
   );
 
   const handleTestPress = useCallback(
@@ -175,7 +221,7 @@ export default function TestsScreen() {
                 {published.map((ch) => (
                   <Pressable
                     key={ch.id}
-                    onPress={() => router.push(`/chapter/${ch.id}/quiz`)}
+                    onPress={() => void handleChapterQuizPress(ch.id, ch.subject_id, ch.order)}
                     style={({ pressed }) => [styles.itemRow, pressed && styles.cardPressed]}
                     accessibilityRole="button"
                     accessibilityLabel={`Quiz capitol ${ch.title}`}

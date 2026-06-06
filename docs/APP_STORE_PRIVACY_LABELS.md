@@ -125,7 +125,7 @@ Nu e un câmp separat în Privacy Labels, dar reduce respingerea la Guideline **
 
 | Câmp ASC | URL recomandat (după publicare landing) |
 |----------|----------------------------------------|
-| **Privacy Policy URL** | `https://kheya.ro/privacy` sau GitHub Pages la `landing/privacy.html` |
+| **Privacy Policy URL** | `https://www.kheya.ro/politicadeconfidentialitate` |
 | **Terms of Use (EULA)** | `https://kheya.ro/terms` sau link Apple standard + termeni în app |
 | **Support URL** | `https://kheya.ro` sau `mailto:contact@kheya.ro` |
 
