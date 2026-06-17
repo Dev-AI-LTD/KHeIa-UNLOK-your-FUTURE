@@ -21,6 +21,7 @@
       }
     },
     "production": {
+      "node": "22.13.1",
       "android": {
         "buildType": "app-bundle"
       },

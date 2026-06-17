@@ -9,7 +9,9 @@ import {
   ScrollView,
   Image,
   Pressable,
+  Platform,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -18,6 +20,7 @@ import { colors, spacing, ios, iosText } from '@/theme';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { IOSButton } from '@/components/ui/IOSButton';
 import { bridgeKindeToSupabase, restoreSupabaseFromKinde } from '@/services/auth.service';
+import { kindeOAuthPadLogin } from '@/services/kindeOAuthPad';
 import { getKindeAuthOptions } from '@/lib/kindeConfig';
 import { supabase } from '@/services/supabase';
 import { getPrivacyPolicyUrl, getTermsUrl, openLegalUrl } from '@/lib/legalUrls';
@@ -42,12 +45,21 @@ const FEATURES = [
   },
 ] as const;
 
+WebBrowser.maybeCompleteAuthSession();
+
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const kinde = useKindeAuth();
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    void WebBrowser.warmUpAsync();
+    return () => {
+      void WebBrowser.coolDownAsync();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,11 +118,42 @@ export default function LoginScreen() {
     router.replace('/(tabs)/home');
   };
 
+  const confirmPadAuth = (): Promise<boolean> =>
+    new Promise((resolve) => {
+      Alert.alert(
+        'Autentificare pe iPad',
+        'Pagina de login se deschide pe tot ecranul.\n\nOn iPad: if the keyboard does not appear, tap the Email field.\nPe iPad: dacă tastatura nu apare, atinge câmpul Email.',
+        [
+          { text: 'Anulează', style: 'cancel', onPress: () => resolve(false) },
+          { text: 'Continuă', onPress: () => resolve(true) },
+        ],
+      );
+    });
+
+  const runKindeAuth = async (mode: 'login' | 'register') => {
+    if (Platform.isPad) {
+      const proceed = await confirmPadAuth();
+      if (!proceed) return;
+      const result = await kindeOAuthPadLogin(mode);
+      if (!result.success) {
+        if (result.errorMessage) {
+          Alert.alert('Eroare', result.errorMessage);
+        }
+        return;
+      }
+      await finishAuth(result.accessToken);
+      return;
+    }
+
+    const kindeFn = mode === 'login' ? kinde.login : kinde.register;
+    const result = await kindeFn(getKindeAuthOptions());
+    await finishAuth(result.success ? result.accessToken : undefined);
+  };
+
   const handleSignIn = async () => {
     setLoading(true);
     try {
-      const result = await kinde.login(getKindeAuthOptions());
-      await finishAuth(result.success ? result.accessToken : undefined);
+      await runKindeAuth('login');
     } catch (e) {
       Alert.alert('Eroare', e instanceof Error ? e.message : 'Autentificare eșuată');
     } finally {
@@ -121,8 +164,7 @@ export default function LoginScreen() {
   const handleSignUp = async () => {
     setLoading(true);
     try {
-      const result = await kinde.register(getKindeAuthOptions());
-      await finishAuth(result.success ? result.accessToken : undefined);
+      await runKindeAuth('register');
     } catch (e) {
       Alert.alert('Eroare', e instanceof Error ? e.message : 'Înregistrare eșuată');
     } finally {

@@ -54,7 +54,7 @@ const PROFILE_TABS: TabItem[] = [
   { id: 'clasament', label: 'Clasament' },
   { id: 'statistici', label: 'Statistici' },
   { id: 'plan', label: 'Plan studiu' },
-  { id: 'setari', label: 'Setări' },
+  { id: 'setari', label: 'Setări / Settings' },
   { id: 'legal', label: 'Legal' },
 ];
 
@@ -526,8 +526,8 @@ export default function ProfileScreen() {
           />
           <View style={styles.accountDivider} />
           <IOSListRow
-            title="Șterge cont"
-            subtitle="Ștergere definitivă (GDPR)"
+            title="Șterge cont / Delete account"
+            subtitle="Ștergere definitivă a datelor (GDPR)"
             icon="trash-outline"
             destructive
             onPress={handleDeleteAccount}
@@ -555,14 +555,12 @@ export default function ProfileScreen() {
               Abonamentul nu se reînnoiește. Beneficiile Pro rămân până la data de expirare.
             </Text>
           ) : null}
-          {!isPremium ? (
-            <IOSButton
-              label="Deblochează KHEYA Pro"
-              onPress={() => void handleOpenPremium()}
-              variant="primary"
-              style={styles.premiumCta}
-            />
-          ) : null}
+          <IOSButton
+            label="KHEYA Pro — planuri și prețuri"
+            onPress={() => void handleOpenPremium()}
+            variant="primary"
+            style={styles.premiumCta}
+          />
           <IOSButton
             label="Restaurare / Gestionează abonamentul"
             onPress={() => void handleManageSubscription()}
@@ -624,6 +622,18 @@ export default function ProfileScreen() {
 
   const renderLegalTab = () => (
     <View style={styles.legalSection}>
+      {userId ? (
+        <GlassCard dark intensity={14} style={styles.accountCard}>
+          <Text style={styles.settingsSectionTitle}>Cont / Account</Text>
+          <IOSListRow
+            title="Șterge cont / Delete account"
+            subtitle="Permanent account and data deletion (GDPR)"
+            icon="trash-outline"
+            destructive
+            onPress={handleDeleteAccount}
+          />
+        </GlassCard>
+      ) : null}
       <View style={styles.legalLinks}>
         {privacyUrl ? (
           <IOSListRow

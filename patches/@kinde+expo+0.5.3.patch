@@ -1,0 +1,13 @@
+diff --git a/node_modules/@kinde/expo/dist/index.mjs b/node_modules/@kinde/expo/dist/index.mjs
+index ea79278..0ea3c57 100644
+--- a/node_modules/@kinde/expo/dist/index.mjs
++++ b/node_modules/@kinde/expo/dist/index.mjs
+@@ -105,7 +105,7 @@ var A = /* @__PURE__ */ function(e) {
+ 			}
+ 		});
+ 		try {
+-			let e = await n.promptAsync({ authorizationEndpoint: `${O}/oauth2/auth` }, { showInRecents: !0 });
++			let e = await n.promptAsync({ authorizationEndpoint: `${O}/oauth2/auth` }, { showInRecents: !0, presentationStyle: "fullScreen" });
+ 			if (n && e?.type === "success") {
+ 				let i = await p({
+ 					clientId: j,

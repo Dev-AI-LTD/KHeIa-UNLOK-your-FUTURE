@@ -18,12 +18,16 @@ export function getKindeRedirectUri(): string {
 export function getKindeAuthOptions() {
   const redirectURL = getKindeRedirectUri();
   if (__DEV__ && Constants.appOwnership === 'expo') {
-    // Use app logger (dev-only) instead of console.* directly.
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { logger } = require('@/lib/logger');
     logger.log('Kinde', 'Expo Go redirect URL (add to Kinde → Callback URLs):', redirectURL);
   }
-  return { redirectURL };
+  return {
+    redirectURL,
+    // Hosted login page; helps focus on mobile/tablet.
+    lang: 'ro',
+    hasSuccessPage: true,
+  };
 }
 
 /** @deprecated Use getKindeAuthOptions() — redirect differs in Expo Go vs native build. */
