@@ -50,13 +50,18 @@ STRUCTURĂ UI (texte exacte – diacritice și branding)
 - Buton principal pe cardul selectat: „Continuă cu KHEYA Pro”
 - Buton secundar (dacă există): „Mai târziu” — discret, fără accent
 - Link discret jos: „Restaurează cumpărăturile”
-- Text legal mic: „Abonamentul se reînnoiește automat. Poți anula oricând din Google Play.”
+- Text legal mic (OBLIGATORIU pentru App Store 3.1.2):
+  „Abonamentul se reînnoiește automat. Poți anula oricând din App Store.” (iOS) / „din Google Play.” (Android)
+- Link-uri legale funcționale în footer paywall (OBLIGATORIU):
+  • Politica de confidențialitate: https://www.kheya.ro/politicadeconfidentialitate
+  • Termeni și condiții (EULA): https://kheya.ro/terms
 - Nu include plan lifetime / plată unică – doar lunar și anual
 
 TEHNIC (RevenueCat)
 - Offering: default (current)
 - Packages: monthly, yearly
-- Platformă prioritară: Google Play (Android), package com.kheia.edumat
+- iOS App Store product IDs: KHEYA_pro_monthly, KHEYA_pro_yearly (must match App Store Connect)
+- Android package: com.kheia.edumat — products monthly, yearly
 - Publicare paywall după generare și asociere la offering default
 ```
 
@@ -64,10 +69,11 @@ TEHNIC (RevenueCat)
 
 ## După generare în RevenueCat
 
-1. **Offerings → default** – verifică pachetele `monthly` și `yearly` cu produsele Google Play.
-2. **Google Play Console** – prețuri: 30 RON/lună, 300 RON/an (sau echivalent; store-ul poate rotunji).
-3. **Publish** paywall-ul.
-4. În app: Profil → **Deblochează KHEYA Pro** sau quiz → paywall nativ (`presentPaywall`).
+1. **Offerings → default** – verifică pachetele `monthly` și `yearly` cu produsele **Apple** (`KHEYA_pro_monthly`, `KHEYA_pro_yearly`) și Google Play.
+2. **Paywall footer** – adaugă link-uri Privacy Policy și Terms of Use (URL-urile de mai sus).
+3. **Google Play Console** – prețuri: 30 RON/lună, 300 RON/an (sau echivalent; store-ul poate rotunji).
+4. **Publish** paywall-ul.
+5. În app: Profil → **KHEYA Pro — planuri și prețuri** sau quiz → paywall nativ (`presentPaywall`).
 
 ## Env app
 

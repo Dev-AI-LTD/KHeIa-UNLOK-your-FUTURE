@@ -1,8 +1,27 @@
 # App Store Connect — IAP promotional images (Guideline 2.3.2)
 
-Apple a respins build 14 pentru că imaginile promo la abonamente erau **identice cu iconița app** sau **duplicate** între monthly/yearly.
+Apple a respins build 14/16 pentru că imaginile promo la abonamente erau **identice cu iconița app** sau **duplicate** între monthly/yearly.
 
-## Opțiunea A — rapidă (recomandat dacă nu promovezi IAP în App Store acum)
+## Imagini generate (gata de upload)
+
+Script stilizat: logo KHEYA + layout paywall (beneficii, preț, CTA verde). Fundal blur din captura paywall.
+
+```powershell
+cd c:\Users\octav\Desktop\KHEIA3\KHeIa-UNLOK-your-FUTURE
+# Fără captură paywall (gradient simplu):
+node scripts/generate-asc-promo-placeholders.mjs
+# Cu captura ta de paywall (recomandat):
+node scripts/generate-asc-promo-placeholders.mjs marketing/app-store/export/promo-images/paywall-source.png
+```
+
+Output în `marketing/app-store/export/promo-images/`:
+- `kheya-pro-monthly-promo.png` (1290×2796) — plan **LUNAR** 29 RON/lună
+- `kheya-pro-yearly-promo.png` (1290×2796) — plan **ANUAL** 249 RON/an + badge „Cel mai avantajos”
+- Variante `-1024.png` pentru preview
+
+**Nu** folosi `kheya_icon_1024x1024.png` sau aceeași imagine pe ambele subs.
+
+## Opțiunea A — șterge promo (dacă nu promovezi IAP în App Store)
 
 1. **App Store Connect → Subscriptions → kheya**
 2. **KHEYA_pro_monthly** → secțiunea **App Store Promotion** / **Promotional Image**
@@ -10,7 +29,11 @@ Apple a respins build 14 pentru că imaginile promo la abonamente erau **identic
 4. Repetă pentru **KHEYA_pro_yearly**
 5. **Save**
 
-## Opțiunea B — imagini distincte per plan
+## Opțiunea B — încarcă imagini distincte per plan
+
+Încarcă în ASC:
+- **KHEYA_pro_monthly** → `marketing/app-store/export/promo-images/kheya-pro-monthly-promo.png`
+- **KHEYA_pro_yearly** → `marketing/app-store/export/promo-images/kheya-pro-yearly-promo.png`
 
 ### B1 — Placeholder (rapid, fără capturi TestFlight)
 

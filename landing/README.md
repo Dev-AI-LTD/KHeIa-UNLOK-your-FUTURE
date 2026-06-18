@@ -4,6 +4,10 @@ Pagina web de prezentare pentru aplicația KHEYA.
 
 ## Deploy
 
+Paginile legale trebuie publice pentru App Store:
+- `privacy.html` → `https://www.kheya.ro/politicadeconfidentialitate` (sau host echivalent)
+- `terms.html` → `https://kheya.ro/terms` (**obligatoriu** — Apple 3.1.2)
+
 ### GitHub Pages
 1. În repository, mergi la **Settings** → **Pages**
 2. Source: **Deploy from a branch**

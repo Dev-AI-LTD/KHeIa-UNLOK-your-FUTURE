@@ -228,6 +228,79 @@ export function resolvePackageForPlan(
 
 export type PaywallResult = 'NOT_PRESENTED' | 'CANCELLED' | 'PURCHASED' | 'RESTORED' | 'ERROR';
 
+export type PaywallDiagnostics = {
+  configured: boolean;
+  initialized: boolean;
+  offeringId: string | null;
+  packageCount: number;
+  iosProductIds: string[];
+  error: string | null;
+};
+
+/** Preflight: verify RevenueCat offering has purchasable iOS packages before showing paywall. */
+export async function getPaywallDiagnostics(): Promise<PaywallDiagnostics> {
+  const empty: PaywallDiagnostics = {
+    configured: isRevenueCatConfigured(),
+    initialized,
+    offeringId: null,
+    packageCount: 0,
+    iosProductIds: [],
+    error: null,
+  };
+  if (!isNative || !isRevenueCatConfigured()) {
+    return { ...empty, error: 'RevenueCat not configured for this platform.' };
+  }
+  try {
+    if (!initialized) await initPurchases();
+    const Purchases = await getPurchasesModule();
+    const offerings = await Purchases.getOfferings();
+    const current = offerings.current;
+    if (!current) {
+      return { ...empty, initialized: true, error: 'No current offering in RevenueCat.' };
+    }
+    const packages = current.availablePackages ?? [];
+    const iosProductIds = packages
+      .map((p) => p.product?.identifier)
+      .filter((id): id is string => !!id);
+    if (packages.length === 0) {
+      return {
+        ...empty,
+        initialized: true,
+        offeringId: current.identifier,
+        error: 'Offering has no packages.',
+      };
+    }
+    if (Platform.OS === 'ios' && iosProductIds.length === 0) {
+      return {
+        ...empty,
+        initialized: true,
+        offeringId: current.identifier,
+        error: 'No iOS store products mapped to offering packages.',
+      };
+    }
+    return {
+      configured: true,
+      initialized: true,
+      offeringId: current.identifier,
+      packageCount: packages.length,
+      iosProductIds,
+      error: null,
+    };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Failed to load offerings.';
+    logger.warn('Purchases', 'getPaywallDiagnostics failed', e);
+    return { ...empty, initialized, error: message };
+  }
+}
+
+export function paywallUnavailableMessage(diagnostics: PaywallDiagnostics): string {
+  if (!diagnostics.configured) return paymentsUnavailableMessage();
+  if (diagnostics.error) {
+    return `Abonamentele nu sunt disponibile momentan (${diagnostics.error}). Verifică conexiunea sau încearcă din nou. Suport: contact@kheya.ro`;
+  }
+  return paymentsUnavailableMessage();
+}
+
 function paywallResultFromNative(result: unknown): PaywallResult {
   return (result?.toString?.() ?? result ?? 'ERROR') as PaywallResult;
 }
@@ -281,6 +354,11 @@ export async function normalizePaywallResult(raw: PaywallResult): Promise<Paywal
 
 export async function presentPaywall(): Promise<PaywallResult> {
   if (!isNative || !isRevenueCatConfigured()) return 'ERROR';
+  const diagnostics = await getPaywallDiagnostics();
+  if (diagnostics.error) {
+    logger.warn('Purchases', 'presentPaywall blocked', diagnostics);
+    return 'ERROR';
+  }
   try {
     if (!initialized) await initPurchases();
     const RevenueCatUI = (await import('react-native-purchases-ui')).default;

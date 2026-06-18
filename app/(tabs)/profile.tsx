@@ -45,6 +45,8 @@ import {
   isRevenueCatConfigured,
   presentPaywall,
   presentCustomerCenter,
+  getPaywallDiagnostics,
+  paywallUnavailableMessage,
   type PaywallResult,
 } from '@/services/purchases.service';
 import { paymentsUnavailableMessage } from '@/lib/storeCopy';
@@ -198,6 +200,17 @@ export default function ProfileScreen() {
             ))}
           </View>
         )}
+
+        <GlassCard dark intensity={14} style={styles.accountQuickCard}>
+          <Text style={styles.accountQuickTitle}>Cont / Account</Text>
+          <IOSListRow
+            title="Șterge cont / Delete account"
+            subtitle="Permanent deletion (GDPR) — Profil → Setări"
+            icon="trash-outline"
+            destructive
+            onPress={handleDeleteAccount}
+          />
+        </GlassCard>
       </>
     );
   };
@@ -412,6 +425,11 @@ export default function ProfileScreen() {
   const handlePaywallResult = async (result: PaywallResult) => {
     if (result === 'PURCHASED' || result === 'RESTORED') {
       await refreshAfterPurchase();
+      return;
+    }
+    if (result === 'ERROR') {
+      const diagnostics = await getPaywallDiagnostics();
+      Alert.alert('Abonament indisponibil', paywallUnavailableMessage(diagnostics));
     }
   };
 
@@ -422,6 +440,11 @@ export default function ProfileScreen() {
     }
     if (!isRevenueCatConfigured()) {
       Alert.alert('Indisponibil', paymentsUnavailableMessage());
+      return;
+    }
+    const diagnostics = await getPaywallDiagnostics();
+    if (diagnostics.error) {
+      Alert.alert('Abonament indisponibil', paywallUnavailableMessage(diagnostics));
       return;
     }
     const result = await presentPaywall();
@@ -478,7 +501,7 @@ export default function ProfileScreen() {
     if (!userId) return;
     Alert.alert(
       'Ștergere cont',
-      'Toate datele tale (profil, progres, statistici) vor fi șterse definitiv. Conform GDPR, nu poți reveni după ștergere. Ești sigur?',
+      'Toate datele tale (profil, progres, statistici) vor fi șterse definitiv. Conform GDPR, nu poți reveni după ștergere.\n\nDacă ai KHEYA Pro activ, anulează abonamentul separat din Apple ID → Abonamente. Ești sigur?',
       [
         { text: 'Anulare', style: 'cancel' },
         {
@@ -1071,6 +1094,21 @@ const styles = StyleSheet.create({
     ...iosText('subhead'),
     color: colors.dark.muted,
     textAlign: 'left',
+  },
+  accountQuickCard: {
+    marginTop: spacing.sectionGap,
+    padding: 0,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(2, 6, 23, 0.55)',
+    borderColor: 'rgba(148, 163, 184, 0.25)',
+  },
+  accountQuickTitle: {
+    ...iosText('subhead'),
+    fontWeight: '600',
+    color: colors.dark.muted,
+    paddingHorizontal: spacing.cardPadding,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
   },
   skinTitle: {
     ...iosText('title3'),

@@ -47,7 +47,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#1e293b"
     },
-    "description": "Pregătire Evaluare Națională 2026, Bacalaureat Română, simulări admitere. Teorie, quiz-uri și teste pentru EN și BAC.",
+    "description": "Pregătire Evaluare Națională 2026, Bacalaureat Română, simulări admitere. Teorie, quiz-uri și teste pentru EN și BAC. Privacy: https://www.kheya.ro/politicadeconfidentialitate | Terms (EULA): https://kheya.ro/terms",
     "android": {
       "versionCode": 13,
       "package": "com.kheia.edumat",
