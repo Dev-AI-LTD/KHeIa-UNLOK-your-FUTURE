@@ -51,7 +51,10 @@ STRUCTURĂ UI (texte exacte – diacritice și branding)
 - Buton secundar (dacă există): „Mai târziu” — discret, fără accent
 - Link discret jos: „Restaurează cumpărăturile”
 - Text legal mic (OBLIGATORIU pentru App Store 3.1.2):
-  „Abonamentul se reînnoiește automat. Poți anula oricând din App Store.” (iOS) / „din Google Play.” (Android)
+  Folosește variabila custom: `{{ renewal_legal }}`
+  (app-ul trimite automat „App Store” pe iOS și „Google Play” pe Android)
+  Text implicit fallback în editor: „Abonamentul se reînnoiește automat. Poți anula oricând din App Store.”
+  Opțional și `{{ store_name }}` dacă vrei doar numele magazinului.
 - Link-uri legale funcționale în footer paywall (OBLIGATORIU):
   • Politica de confidențialitate: https://www.kheya.ro/politicadeconfidentialitate
   • Termeni și condiții (EULA): https://kheya.ro/terms

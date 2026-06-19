@@ -1,83 +1,113 @@
-# App Store Connect — Resolution Center reply (submission c2a26678)
+# App Store Connect — Resolution Center reply
 
-**Submission ID:** `c2a26678-324f-41c4-9ce8-6c05bcbd76c2`  
-**Version:** 0.3.5 · **Build:** 16
+**Submission ID (respins):** `b3398f37-dd8e-431e-8625-6588df35005a`  
+**Review date:** 16 June 2026 · **Device:** iPad Air 11-inch (M3)  
+**Version respinsă:** **0.3.5 (16)** — build-ul din TestFlight marcat „Rejected”
 
-Copy-paste în **App Store Connect → Resolution Center** (English).
+| Build | EAS / ASC | Notă |
+|-------|-----------|------|
+| **16** | Respins App Review | Submission `b3398f37-…` — guidelines 2.3.2, 2.1(a), 2.1(b), 5.1.1(v) |
+| 14 | Mai vechi | Posibil review anterior; **nu** retrimite build 14 |
+
+### Ce înseamnă „Rejected” la TestFlight
+
+Nu e defect la fișierul IPA. Apple a **respins trimiterea** versiunii 0.3.5 cu build 16. Build-ul rămâne în TestFlight cu status **Rejected** și **nu poate fi retrimis singur** — trebuie:
+
+1. **Remedieri** (metadata, imagini IAP, notes, recording ștergere cont, etc.)
+2. Dacă schimbi **codul** (ex. tastatură iPad): **build nou 17** + upload
+3. Dacă doar **metadata**: uneori poți retrimite aceeași versiune cu build 16 după fixuri ASC (fără binary nou)
+4. **Reply** în Resolution Center + **Submit for Review** din nou pe pagina versiunii 0.3.5
+
+**Următorul pas binary:** după fixuri în cod → `eas build --platform ios --profile production` → **build 17** în `app.json`.
+
+Copy-paste în **App Store Connect → Resolution Center → Reply** (English).
 
 ---
 
 ```
-Thank you for your detailed feedback. We have addressed all four guidelines for resubmission.
+Thank you for your feedback on submission b3398f37-dd8e-431e-8625-6588df35005a.
+
+We have addressed all cited guidelines for resubmission of version 0.3.5 (build 16 was rejected under submission b3398f37-dd8e-431e-8625-6588df35005a; fixes are detailed below).
 
 ---
 
 2.3.2 — Promotional images
 
-We removed the app-icon promotional images and uploaded distinct promotional images for each subscription:
-• KHEYA_pro_monthly — monthly plan artwork (not the app icon)
-• KHEYA_pro_yearly — yearly plan artwork (different from monthly)
+We removed promotional images that duplicated the app icon or were identical between subscriptions.
+Each subscription now has a distinct image (monthly vs yearly paywall artwork), or promotional images were removed if we are not promoting IAP on the product page.
 
-Files are in our repo at marketing/app-store/export/promo-images/ and uploaded in App Store Connect per subscription.
-
----
-
-3.1.2(c) — Subscriptions metadata (Terms of Use / EULA)
-
-We updated App Store metadata:
-• Privacy Policy URL: https://www.kheya.ro/politicadeconfidentialitate
-• Terms of Use (EULA) link in the App Description: https://kheya.ro/terms
-• In-app: Login screen and Profile → Legal include functional Privacy Policy and Terms links
-• RevenueCat paywall footer includes Privacy Policy and Terms of Use links
-
-Subscriptions displayed in the paywall include title (KHEYA Pro Monthly / Yearly), billing period, and price before purchase.
+Assets: marketing/app-store/export/promo-images/
+• Promo (optional, 1024×1024): kheya-pro-monthly-promo-1024.png, kheya-pro-yearly-promo-1024.png
+• Review screenshot (1284×2778): kheya-pro-monthly-review-portrait.png, kheya-pro-yearly-review-portrait.png
 
 ---
 
-2.1(b) — In-App Purchase / subscription purchase
+2.1(a) — iPad keyboard on login / registration
 
-We verified App Store Connect and RevenueCat configuration:
-• Paid Apps Agreement active
-• KHEYA_pro_monthly and KHEYA_pro_yearly attached to this app version
-• RevenueCat offering "default" maps iOS packages monthly/yearly to Apple product IDs KHEYA_pro_monthly and KHEYA_pro_yearly
-• Tested successfully on TestFlight with a Sandbox Apple ID and a new free account (not the review account)
+We fixed authentication on iPad: login and registration open Kinde in a full-screen browser session (SFSafariViewController) instead of ASWebAuthenticationSession, which resolves the keyboard not appearing on iPadOS. Tested on iPad.
 
-HOW TO TEST IAP (important):
-1. Sign out of the review account (contact@devaieood.com) OR register a new free account.
-2. Settings → App Store → Sandbox Account → sign in with Sandbox Apple ID.
-3. Profile tab → Setări / Settings → "KHEYA Pro — planuri și prețuri".
-4. Select Monthly or Yearly and complete the sandbox purchase.
+---
 
-The review account (contact@devaieood.com) has Pro content server-side for testing educational features without purchase. It should NOT be used for IAP purchase testing.
+2.1(b) — Locating In-App Purchases (KHEYA Pro monthly / yearly)
+
+Subscriptions are available in-app via:
+• Profile tab → Settings → "KHEYA Pro — planuri și prețuri"
+• Or: Home → subject → chapter 3+ → paywall
+• Or: Tests tab → second test → paywall
+
+IMPORTANT — review account vs IAP testing:
+The review account (contact@devaieood.com) has KHEYA Pro server-side for content testing and will NOT show the purchase paywall.
+
+To test IAP in Sandbox:
+1. Sign out OR register a NEW free account (not contact@devaieood.com).
+2. Settings → App Store → Sandbox Account → sign in with a Sandbox Apple ID.
+3. Profile → Settings → KHEYA Pro plans → select Monthly or Yearly → complete sandbox purchase.
+
+Paid Apps Agreement is active. Products KHEYA_pro_monthly and KHEYA_pro_yearly are attached to this app version and mapped in RevenueCat offering "default".
 
 ---
 
 5.1.1(v) — Account deletion
 
-Account deletion is available in-app without contacting support:
-• Profile → Evoluție → Cont / Account → "Șterge cont / Delete account"
-• OR Profile → Setări / Settings → "Șterge cont / Delete account"
-• OR Profile → Legal → Cont / Account → same option
+Permanent in-app account deletion (no website required):
+• Profile → Settings → "Șterge cont / Delete account"
+• Double confirmation → deletes profile, progress, and auth data → returns to login screen.
 
-Flow: double confirmation → permanent deletion of profile, progress, and statistics via our delete-account API → return to login screen.
-
-Screen recording of the full deletion flow is attached in App Review Information.
+Screen recording of the full flow is attached in App Review Information.
 
 ---
 
-REVIEW ACCOUNT (content testing — Pro without purchase)
+3.1.2(c) — Subscriptions metadata (if applicable)
+
+• Privacy Policy: https://www.kheya.ro/politicadeconfidentialitate
+• Terms of Use (EULA): https://kheya.ro/terms (App Description + in-app + paywall footer)
+• Paywall shows subscription name, length, and price before purchase.
+
+---
+
+REVIEW ACCOUNT (content — Pro without purchase)
 Email: contact@devaieood.com
-Password: [as in Sign-In fields]
+Password: [as in App Review Sign-In fields]
 
 Support: contact@kheya.ro
 ```
 
 ---
 
+## Unde pui ce
+
+| Ce | Unde în ASC |
+|----|-------------|
+| **Reply** (textul de mai sus) | **Resolution Center** → submission respins → **Reply** |
+| **Notes** + sign-in + attachments | **App** → version **0.3.5** → **App Review Information** |
+| IAP review screenshot | **Monetization → Subscriptions** → fiecare produs → **Review Information** |
+
+---
+
 ## Atașamente (App Review Information)
 
-1. **Screen recording — account deletion:** sign in → Profile → Delete account → confirm → login screen. See `docs/ACCOUNT_DELETION_SCREEN_RECORDING.md`.
-2. **Screen recording — IAP (optional):** new account + Sandbox Apple ID → paywall → successful purchase.
+1. **Screen recording — account deletion:** sign in → Profile → Delete account → confirm → login. Vezi `docs/ACCOUNT_DELETION_SCREEN_RECORDING.md`.
+2. **Screen recording — IAP (optional):** cont nou + Sandbox Apple ID → paywall → purchase.
 
 ---
 
@@ -85,19 +115,19 @@ Support: contact@kheya.ro
 
 | Task | Doc |
 |------|-----|
-| Upload distinct promo images | `docs/ASC_IAP_PROMO_IMAGES.md` |
+| Fix metadata + subscriptions, apoi **Submit for Review** (build 16 dacă nu schimbi codul, sau **build 17** după `eas build`) | — |
+| Distinct promo images or delete promo | `docs/ASC_IAP_PROMO_IMAGES.md` |
+| Review screenshot **1284×2778** per subscription | `scripts/asc_review_screenshot_1024.py` |
 | App Description + Terms URL | `docs/ASC_APP_DESCRIPTION.md` |
-| Deploy `landing/terms.html` → `https://kheya.ro/terms` (fix 404) | `landing/terms.html` |
-| RevenueCat iOS product mapping + paywall legal links | `docs/ASC_IAP_VALIDATION.md`, `docs/REVENUECAT_PAYWALL_AI_PROMPT.md` |
+| `https://kheya.ro/terms` live (nu 404) | `landing/terms.html` |
+| RevenueCat iOS products + paywall legal | `docs/ASC_IAP_VALIDATION.md` |
 | Reviewer notes | `docs/APP_STORE_REVIEW_NOTES.md` |
 
 ---
 
 ## După reply
 
-1. Upload promo images to ASC (monthly vs yearly — not app icon).
-2. Paste App Description from `docs/ASC_APP_DESCRIPTION.md`.
-3. Deploy terms page so `https://kheya.ro/terms` returns 200.
-4. Update RevenueCat paywall with Privacy + Terms footer links; verify iOS products on offering `default`.
-5. Attach screen recordings in App Review Information.
-6. **Submit for Review**.
+1. Remediază toate punctele (imagini IAP, notes, recording, terms live).
+2. Dacă ai schimbat cod → upload **build 17** și selectează-l pe versiunea 0.3.5.
+3. Reply în **Resolution Center**.
+4. **Submit for Review** (versiunea revine din „Rejected” la „Waiting for Review”).

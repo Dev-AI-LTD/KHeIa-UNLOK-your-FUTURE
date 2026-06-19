@@ -100,7 +100,9 @@ export async function restoreSupabaseFromKinde(
 /**
  * GDPR: delete account via edge function (Supabase JWT after Kinde bridge).
  */
-export async function deleteAccount(): Promise<{ error: Error | null }> {
+export async function deleteAccount(
+  kindeAccessToken?: string | null,
+): Promise<{ error: Error | null }> {
   const {
     data: { session },
     error: sessionError,
@@ -110,8 +112,14 @@ export async function deleteAccount(): Promise<{ error: Error | null }> {
     return { error: sessionError ?? new Error('Nu ești autentificat.') };
   }
 
+  const headers: Record<string, string> = {};
+  if (kindeAccessToken) {
+    headers['X-Kinde-Token'] = kindeAccessToken;
+  }
+
   const { data, error } = await supabase.functions.invoke('delete-account', {
     method: 'POST',
+    headers,
   });
 
   if (error) {

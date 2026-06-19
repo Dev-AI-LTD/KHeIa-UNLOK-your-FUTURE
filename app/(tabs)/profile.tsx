@@ -517,7 +517,8 @@ export default function ProfileScreen() {
                   text: 'Șterge cont',
                   style: 'destructive',
                   onPress: async () => {
-                    const { error } = await deleteAccount();
+                    const kindeToken = await kinde.getAccessToken();
+                    const { error } = await deleteAccount(kindeToken);
                     if (error) {
                       Alert.alert('Eroare', error.message ?? 'Ștergerea contului a eșuat. Încearcă din nou sau contactează contact@kheya.ro.');
                     } else {

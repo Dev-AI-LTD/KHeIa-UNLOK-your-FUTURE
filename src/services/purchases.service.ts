@@ -1,7 +1,9 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import type { PurchasesPackage } from 'react-native-purchases';
+import { CustomVariableValue } from 'react-native-purchases-ui';
 import { logger } from '@/lib/logger';
+import { getAppStoreName, subscriptionRenewalLegalText } from '@/lib/storeCopy';
 
 const extra = Constants.expoConfig?.extra as Record<string, string | undefined> | undefined;
 
@@ -352,6 +354,13 @@ export async function normalizePaywallResult(raw: PaywallResult): Promise<Paywal
   return raw;
 }
 
+function paywallCustomVariables() {
+  return {
+    store_name: CustomVariableValue.string(getAppStoreName()),
+    renewal_legal: CustomVariableValue.string(subscriptionRenewalLegalText()),
+  };
+}
+
 export async function presentPaywall(): Promise<PaywallResult> {
   if (!isNative || !isRevenueCatConfigured()) return 'ERROR';
   const diagnostics = await getPaywallDiagnostics();
@@ -362,7 +371,9 @@ export async function presentPaywall(): Promise<PaywallResult> {
   try {
     if (!initialized) await initPurchases();
     const RevenueCatUI = (await import('react-native-purchases-ui')).default;
-    const result = paywallResultFromNative(await RevenueCatUI.presentPaywall());
+    const result = paywallResultFromNative(
+      await RevenueCatUI.presentPaywall({ customVariables: paywallCustomVariables() }),
+    );
     return normalizePaywallResult(result);
   } catch (e) {
     if (isProductAlreadyOwnedError(e)) {
@@ -385,6 +396,7 @@ export async function presentPaywallIfNeeded(): Promise<{ presented: boolean; re
     const raw = paywallResultFromNative(
       await RevenueCatUI.presentPaywallIfNeeded({
         requiredEntitlementIdentifier: KHEIA_PRO_ENTITLEMENT_ID,
+        customVariables: paywallCustomVariables(),
       }),
     );
     const result = await normalizePaywallResult(raw);

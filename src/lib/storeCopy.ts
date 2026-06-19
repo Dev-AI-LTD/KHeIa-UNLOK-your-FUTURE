@@ -9,6 +9,11 @@ export function subscriptionStoreMessage(): string {
   return `Abonamentele KHEYA Pro se activează prin ${getAppStoreName()}.`;
 }
 
+/** Footer legal paywall — App Store pe iOS, Google Play pe Android. */
+export function subscriptionRenewalLegalText(): string {
+  return `Abonamentul se reînnoiește automat. Poți anula oricând din ${getAppStoreName()}.`;
+}
+
 export function paymentsUnavailableMessage(): string {
   if (__DEV__) {
     const key =

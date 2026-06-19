@@ -4,12 +4,19 @@ Apple requested a **physical device** recording showing the full account deletio
 
 ## Before recording
 
-1. Deploy `delete-account` edge function:
+1. Deploy edge functions (includes Kinde user deletion):
    ```bash
    npx supabase functions deploy delete-account
+   npx supabase functions deploy kinde-bridge
    ```
-2. Use a **disposable test account** (not `contact@devaieood.com` — keep the review account intact).
-3. Record on **iPhone** (portrait), iOS screen recording enabled.
+2. Configure Kinde M2M on Supabase (required so email is removed from Kinde):
+   - Kinde dashboard → **Settings → Applications → Add API** (Machine to machine)
+   - Scopes: `read:users`, `delete:users`
+   - ```bash
+     supabase secrets set KINDE_M2M_CLIENT_ID=your_m2m_client_id KINDE_M2M_CLIENT_SECRET=your_m2m_secret
+     ```
+3. Use a **disposable test account** (not `contact@devaieood.com` — keep the review account intact).
+4. Record on **iPhone** (portrait), iOS screen recording enabled.
 
 ## Script (60–90 seconds)
 

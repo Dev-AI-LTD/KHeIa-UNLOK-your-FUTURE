@@ -25,10 +25,10 @@ const features = [
   'Progres EN și BAC',
 ];
 
-const LOGO_SIZE_PORTRAIT = 220;
-const LOGO_SIZE_SQUARE = 120;
+const LOGO_SIZE_PORTRAIT = 236;
+const LOGO_SIZE_SQUARE = 208;
 const LOGO_TOP_PORTRAIT = 88;
-const LOGO_TOP_SQUARE = 28;
+const LOGO_TOP_SQUARE = 36;
 
 const plans = [
   {
@@ -70,22 +70,41 @@ function scale(base, width, ref = 1290) {
 }
 
 function buildFeatureSvg(width, height, compact = false) {
-  const startY = compact ? scale(268, width) : scale(740, width);
-  const lineH = compact ? scale(46, width) : scale(68, width);
-  const fontSize = compact ? scale(26, width) : scale(34, width);
-  const checkR = compact ? scale(12, width) : scale(14, width);
+  const startY = compact ? scale(442, width) : scale(740, width);
+  const lineH = compact ? scale(58, width) : scale(68, width);
+  const fontSize = compact ? scale(34, width) : scale(34, width);
+  const checkR = compact ? scale(15, width) : scale(14, width);
+  const padLeft = compact ? scale(44, width) : scale(56, width);
+  const cx = padLeft + scale(compact ? 16 : 0, width);
+  const textX = padLeft + scale(compact ? 44 : 40, width);
 
   return features
     .map((f, i) => {
       const y = startY + i * lineH;
-      const cx = scale(compact ? 72 : 56, width);
       return `
         <circle cx="${cx}" cy="${y - scale(10, width)}" r="${checkR}" fill="#8b5cf6"/>
-        <text x="${cx}" y="${y - scale(4, width)}" text-anchor="middle" fill="#ffffff" font-size="${scale(compact ? 16 : 20, width)}" font-family="Arial, sans-serif">✓</text>
-        <text x="${scale(compact ? 104 : 96, width)}" y="${y}" fill="#e2e8f0" font-size="${fontSize}" font-family="Arial, sans-serif">${f}</text>
+        <text x="${cx}" y="${y - scale(4, width)}" text-anchor="middle" fill="#ffffff" font-size="${scale(compact ? 18 : 20, width)}" font-family="Arial, sans-serif">✓</text>
+        <text x="${textX}" y="${y}" fill="#e2e8f0" font-size="${fontSize}" font-family="Arial, sans-serif">${f}</text>
       `;
     })
     .join('');
+}
+
+function buildLogoFrameSvg(plan, width, isSquare) {
+  const logoSize = scale(isSquare ? LOGO_SIZE_SQUARE : LOGO_SIZE_PORTRAIT, width);
+  const logoTop = scale(isSquare ? LOGO_TOP_SQUARE : LOGO_TOP_PORTRAIT, width);
+  const logoLeft = Math.round((width - logoSize) / 2);
+  const border = scale(5, width);
+  const outerX = logoLeft - border;
+  const outerY = logoTop - border;
+  const outerSize = logoSize + border * 2;
+  const rxOuter = scale(24, width);
+  const rxInner = scale(20, width);
+
+  return `
+    <rect x="${outerX}" y="${outerY}" width="${outerSize}" height="${outerSize}" rx="${rxOuter}" fill="${plan.borderAccent}"/>
+    <rect x="${logoLeft}" y="${logoTop}" width="${logoSize}" height="${logoSize}" rx="${rxInner}" fill="#0f172a"/>
+  `;
 }
 
 function buildPriceCardSvg(plan, width, cardY, cardH, pad, cardW) {
@@ -116,10 +135,10 @@ function buildOverlaySvg(plan, width, height) {
   const pad = scale(isSquare ? 40 : 48, width);
   const cardW = width - pad * 2;
   const ctaH = scale(isSquare ? 84 : 88, width);
-  const titleY = isSquare ? scale(200, width) : scale(540, width);
-  const subtitleY = isSquare ? scale(242, width) : scale(608, width);
-  const titleSize = isSquare ? scale(64, width) : scale(92, width);
-  const subtitleSize = isSquare ? scale(28, width) : scale(34, width);
+  const titleY = isSquare ? scale(310, width) : scale(540, width);
+  const subtitleY = isSquare ? scale(352, width) : scale(608, width);
+  const titleSize = isSquare ? scale(60, width) : scale(92, width);
+  const subtitleSize = isSquare ? scale(27, width) : scale(34, width);
 
   const footerY = height - scale(isSquare ? 36 : 70, width);
   const ctaY =
@@ -148,6 +167,7 @@ function buildOverlaySvg(plan, width, height) {
       </defs>
       <rect width="100%" height="100%" fill="url(#bg)"/>
       <rect width="100%" height="100%" fill="url(#glow)"/>
+      ${buildLogoFrameSvg(plan, width, isSquare)}
       <text x="50%" y="${titleY}" text-anchor="middle" fill="#f8fafc" font-size="${titleSize}" font-weight="700" font-family="Arial, sans-serif">KHEYA Pro</text>
       <text x="50%" y="${subtitleY}" text-anchor="middle" fill="#94a3b8" font-size="${subtitleSize}" font-family="Arial, sans-serif">Pregătire completă EN și BAC</text>
       ${buildFeatureSvg(width, height, isSquare)}
@@ -212,6 +232,17 @@ for (const plan of plans) {
     const outPath = path.join(outDir, `${baseName}${suffix}.png`);
 
     await (await buildPromo(plan, width, height, paywallSource)).toFile(outPath);
+
+    if (suffix === '-1024') {
+      const flatPath = outPath;
+      const tmp = await sharp(outPath)
+        .flatten({ background: '#0f172a' })
+        .toColourspace('srgb')
+        .removeAlpha()
+        .png({ compressionLevel: 9, force: true })
+        .toBuffer();
+      await sharp(tmp).resize(1024, 1024, { fit: 'fill' }).png({ force: true }).toFile(flatPath);
+    }
 
     const meta = await sharp(outPath).metadata();
     console.log(`✓ ${outPath} → ${meta.width}x${meta.height}`);

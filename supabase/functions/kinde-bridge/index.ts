@@ -182,6 +182,20 @@ Deno.serve(async (req) => {
 
   const existing = listed.users.find((u) => u.email?.toLowerCase() === email);
   let supabaseUserId = existing?.id;
+  const kindeId = profile.id ?? profile.sub;
+
+  if (existing?.id && kindeId) {
+    const currentKindeId =
+      typeof existing.user_metadata?.kinde_id === 'string' ? existing.user_metadata.kinde_id : null;
+    if (currentKindeId !== kindeId) {
+      await admin.auth.admin.updateUserById(existing.id, {
+        user_metadata: {
+          ...existing.user_metadata,
+          kinde_id: kindeId,
+        },
+      });
+    }
+  }
 
   if (!existing) {
     const { data: created, error: createError } = await admin.auth.admin.createUser({
@@ -189,7 +203,7 @@ Deno.serve(async (req) => {
       email_confirm: true,
       user_metadata: {
         full_name: displayName,
-        kinde_id: profile.id ?? profile.sub,
+        kinde_id: kindeId,
       },
     });
     if (createError || !created.user) {

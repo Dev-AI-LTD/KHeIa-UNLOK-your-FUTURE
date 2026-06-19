@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { corsHeaders } from '../_shared/cors.ts';
+import { resolveAndDeleteKindeUser } from '../_shared/kinde-management.ts';
 
 /**
  * GDPR: Șterge contul utilizatorului și toate datele asociate.
@@ -59,7 +60,38 @@ Deno.serve(async (req) => {
   }
   const admin = createClient(supabaseUrl, supabaseServiceKey);
 
+  const { data: authUserData, error: authUserError } = await admin.auth.admin.getUserById(userId);
+  if (authUserError || !authUserData.user) {
+    return new Response(
+      JSON.stringify({ error: 'Utilizator negăsit' }),
+      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const authUser = authUserData.user;
+  const kindeAccessToken = req.headers.get('X-Kinde-Token');
+  const kindeIdFromMetadata =
+    typeof authUser.user_metadata?.kinde_id === 'string' ? authUser.user_metadata.kinde_id : null;
+  const email = authUser.email?.trim().toLowerCase() ?? null;
+
   try {
+    const kindeDelete = await resolveAndDeleteKindeUser({
+      kindeAccessToken,
+      kindeIdFromMetadata,
+      email,
+    });
+
+    if (!kindeDelete.deleted) {
+      return new Response(
+        JSON.stringify({
+          error:
+            kindeDelete.error ??
+            'Nu s-a putut șterge contul Kinde. Contactează contact@kheya.ro dacă problema persistă.',
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // 1. Șterge din tabele care nu au FK on delete cascade către auth.users
     // Ordine: testitems (prin tests), tests, userquizitems, userchapterprogress, coin_transactions, reward_redemptions, user_gamification, duel_sessions
     await admin.from('coin_transactions').delete().eq('user_id', userId);
